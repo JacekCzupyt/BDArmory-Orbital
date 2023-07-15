@@ -14,6 +14,7 @@ namespace BDArmory.Targeting
     {
         public Vector3 velocity;
         public Vector3 geoPos;
+        public Vector3 _position;
         public Vector3 acceleration;
         public bool exists;
         public float timeAcquired;
@@ -45,7 +46,9 @@ namespace BDArmory.Targeting
             vessel = v;
             velocity = v.Velocity();
             IRSource = heatpart;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(IRSource != null ? IRSource.transform.position : v.CoM, v.mainBody);
+            position = IRSource != null ?
+                IRSource.transform.position :
+                v.CoM;
             acceleration = v.acceleration_immediate;
             exists = true;
 
@@ -80,7 +83,7 @@ namespace BDArmory.Targeting
         public TargetSignatureData(CMFlare flare, float _signalStrength)
         {
             velocity = flare.velocity;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(flare.transform.position, FlightGlobals.currentMainBody);
+            position = flare.transform.position;
             exists = true;
             acceleration = Vector3.zero;
             timeAcquired = Time.time;
@@ -99,7 +102,7 @@ namespace BDArmory.Targeting
         public TargetSignatureData(Vector3 _velocity, Vector3 _position, Vector3 _acceleration, bool _exists, float _signalStrength)
         {
             velocity = _velocity;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(_position, FlightGlobals.currentMainBody);
+            position = _position;
             acceleration = _acceleration;
             exists = _exists;
             timeAcquired = Time.time;
@@ -117,13 +120,15 @@ namespace BDArmory.Targeting
 
         public Vector3 position
         {
-            get
-            {
-                return VectorUtils.GetWorldSurfacePostion(geoPos, FlightGlobals.currentMainBody);
+            get {
+                return orbital ?
+                    _position :
+                    VectorUtils.GetWorldSurfacePostion(geoPos, FlightGlobals.currentMainBody);
             }
             set
             {
                 geoPos = VectorUtils.WorldPositionToGeoCoords(value, FlightGlobals.currentMainBody);
+                _position = value;
             }
         }
 
