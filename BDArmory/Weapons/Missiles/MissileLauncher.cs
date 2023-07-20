@@ -5,6 +5,8 @@ using System.Text;
 using UniLinq;
 using UnityEngine;
 
+using MathNet.Numerics;
+
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.FX;
@@ -1638,18 +1640,7 @@ namespace BDArmory.Weapons.Missiles
                             turnRateDPS = 0;
                         }
                     }
-
-                    if (hasRCS)
-                    {
-                        if (turnRateDPS > 0)
-                        {
-                            DoRCS();
-                        }
-                        else
-                        {
-                            KillRCS();
-                        }
-                    }
+                    
                     debugTurnRate = turnRateDPS;
 
                     finalMaxTorque = Mathf.Clamp((TimeIndex - dropTime) * torqueRampUp, 0, maxTorque); //ramp up torque
@@ -1682,7 +1673,7 @@ namespace BDArmory.Weapons.Missiles
                     }
                     else if (GuidanceMode == GuidanceModes.RCS)
                     {
-                        part.transform.rotation = Quaternion.RotateTowards(part.transform.rotation, Quaternion.LookRotation(TargetPosition - part.transform.position, part.transform.up), turnRateDPS * Time.fixedDeltaTime);
+                        VacuumGuidance(atmosMultiplier);
                     }
                     else if (GuidanceMode == GuidanceModes.Cruise)
                     {
@@ -1691,6 +1682,12 @@ namespace BDArmory.Weapons.Missiles
                     else if (GuidanceMode == GuidanceModes.SLW)
                     {
                         SLWGuidance();
+                    }
+                    
+                    
+                    if (hasRCS && turnRateDPS <= 0)
+                    {
+                        KillRCS();
                     }
 
                 }
@@ -2473,6 +2470,82 @@ namespace BDArmory.Weapons.Missiles
 
         }
 
+        void VacuumGuidance(float atmo) {
+            if (TargetAcquired) {
+                if (atmo > 0) {
+                    // If in atmosphere
+                    part.transform.rotation = Quaternion.RotateTowards(
+                        part.transform.rotation,
+                        Quaternion.LookRotation(TargetPosition - part.transform.position, part.transform.up),
+                        debugTurnRate * Time.fixedDeltaTime // TODO: improve turn rate logic
+                    );
+                    DoRCS(Vector3.Reflect(TargetVelocity - vessel.obt_velocity, part.transform.forward));
+                    // TODO: calculate desired acceleration
+                }
+                else {
+                    // If in vacuum
+                    float maxMissileAcceleration = (float)(thrust / vessel.totalMass);
+                    var (desiredAcceleration, timeToTarget) = ComputeVacuumIntercept(
+                        TargetPosition - part.transform.position,
+                        TargetVelocity - vessel.obt_velocity,
+                        TargetAcceleration,
+                        maxMissileAcceleration
+                    );
+                    if (!desiredAcceleration.HasValue) { // If no solution found, disregard target acceleration
+                        (desiredAcceleration, timeToTarget) = ComputeVacuumIntercept(
+                            TargetPosition - part.transform.position,
+                            TargetVelocity - vessel.obt_velocity,
+                            Vector3.zero, 
+                            maxMissileAcceleration
+                        );
+                    }
+                    if (!desiredAcceleration.HasValue) throw new Exception("Desired acceleration not found");
+                    
+                    DrawDebugLine(part.transform.position, part.transform.position + desiredAcceleration.Value);
+                    
+                    // Rotate missile
+                    part.transform.rotation = Quaternion.RotateTowards(
+                        part.transform.rotation,
+                        Quaternion.LookRotation(desiredAcceleration.Value, part.transform.up),
+                        debugTurnRate * Time.fixedDeltaTime // TODO: improve turn rate logic
+                    );
+
+                    Throttle = Vector3.Dot(part.transform.forward, desiredAcceleration.Value.normalized);
+
+                    if (hasRCS) {
+                        DoRCS(desiredAcceleration.Value * (float)vessel.totalMass);
+                    }
+                }
+            }
+        }
+        
+        static (Vector3?, float) ComputeVacuumIntercept(
+            Vector3 targetPosition,
+            Vector3 targetVelocity,
+            Vector3 targetAcceleration,
+            float maxMissileAcceleration
+        ) {
+            var equation = new Polynomial(-maxMissileAcceleration * maxMissileAcceleration);
+            for (int i = 0; i < 3; i++) {
+                var axisPolynomial = new Polynomial(
+                    targetAcceleration[i],
+                    2 * targetVelocity[i],
+                    2 * targetPosition[i]
+                );
+                equation += axisPolynomial * axisPolynomial;
+            }
+            var roots = equation.Roots().Where(e => e.IsReal()).Select(e => e.Real).ToArray();
+        
+            if (!roots.Any())
+                return (null, float.PositiveInfinity);
+        
+            float targetTime = (float)(1 / roots.Max());
+        
+            var missileAcceleration = 2 * targetPosition / (targetTime * targetTime) + 2 * targetVelocity / targetTime + targetAcceleration;
+        
+            return (missileAcceleration, targetTime);
+        }
+
         void DoAero(Vector3 targetPosition)
         {
             aeroTorque = MissileGuidance.DoAeroForces(this, targetPosition, liftArea, controlAuthority * steerMult, aeroTorque, finalMaxTorque, maxAoA);
@@ -2608,16 +2681,14 @@ namespace BDArmory.Weapons.Missiles
             rcsTransforms = new KSPParticleEmitter[] { upRCS, leftRCS, rightRCS, downRCS };
         }
 
-        void DoRCS()
+        void DoRCS(Vector3 desiredThrust)
         {
             try
             {
-                Vector3 relV = TargetVelocity - vessel.obt_velocity;
-
                 for (int i = 0; i < 4; i++)
                 {
                     //float giveThrust = Mathf.Clamp(-localRelV.z, 0, rcsThrust);
-                    float giveThrust = Mathf.Clamp(Vector3.Project(relV, rcsTransforms[i].transform.forward).magnitude * -Mathf.Sign(Vector3.Dot(rcsTransforms[i].transform.forward, relV)), 0, rcsThrust);
+                    float giveThrust = Mathf.Clamp(Vector3.Project(desiredThrust, rcsTransforms[i].transform.forward).magnitude * -Mathf.Sign(Vector3.Dot(rcsTransforms[i].transform.forward, desiredThrust)), 0, rcsThrust);
                     part.rb.AddForce(-giveThrust * rcsTransforms[i].transform.forward);
 
                     if (giveThrust > rcsRVelThreshold)

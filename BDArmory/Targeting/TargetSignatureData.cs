@@ -26,7 +26,7 @@ namespace BDArmory.Targeting
         public ModuleRadar lockedByRadar;
         public Vessel vessel;
         public Part IRSource;
-        bool orbital;
+        public bool orbital;
         Orbit orbit;
 
         public bool Equals(TargetSignatureData other)

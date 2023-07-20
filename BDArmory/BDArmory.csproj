@@ -64,8 +64,16 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\_LocalDev\KSPRefs\KSPAssets.dll</HintPath>
     </Reference>
+    <Reference Include="MathNet.Numerics">
+      <HintPath>..\..\_LocalDev\Imports\MathNet.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Numerics">
+      <HintPath>..\..\_LocalDev\Imports\System.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\_LocalDev\KSPRefs\UnityEngine.dll</HintPath>
@@ -868,6 +876,10 @@
       xcopy /E /Y "$(TargetDir)"BDArmory*.dll "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
       xcopy /E /Y "$(TargetDir)"BDArmory*.pdb "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
 
+      set IMPORTS_DIR=%GIT_PATH%_LocalDev\Imports
+      @echo %IMPORTS_DIR%
+      xcopy /E /Y "%IMPORTS_DIR%\*" "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
+
       if $(ConfigurationName) == Debug (
         @echo building debug files and symbols...
         copy /Y "$(TargetDir)"BDArmory*.pdb "$(ProjectDir)Distribution\GameData\%ModName%\Plugins\"
@@ -912,6 +924,38 @@
 
       echo Build/deploy complete!
     </PostBuildEvent>
+    <PostBuildEvent>
+      @echo $(Targetname)
+      SET ModName=BDArmory
+
+      rem this step strips the solutionName from the git path to give us the root folder for locating the LocalDev Folder
+      rem the echo commands are commented.  used for testing of the desired path.
+      set GIT_PATH=$(SolutionDir)
+      @echo %GIT_PATH%
+      set GIT_PATH=%GIT_PATH:BDArmory\=%
+      @echo %GIT_PATH%
+
+      @echo Copying assemblies to Distribution $(Targetname) files...
+      if not exist "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\" mkdir "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
+      del "$(ProjectDir)Distribution/GameData/${ModName}/Plugins/"BDArmory*
+      xcopy /E /Y "$(TargetDir)"BDArmory*.dll "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
+
+      if $(ConfigurationName) == Debug (
+        @echo building debug files and symbols...
+        copy /Y "$(TargetDir)"BDArmory*.pdb "$(ProjectDir)Distribution\GameData\%ModName%\Plugins\"
+      )
+
+      set IMPORTS_DIR=%GIT_PATH%_LocalDev\Imports
+      @echo %IMPORTS_DIR%
+      xcopy /E /Y "%IMPORTS_DIR%\*" "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
+      
+      set KSP_DIR=%GIT_PATH%Kerbal Space Program
+      @echo %KSP_DIR%
+      @echo copying:"$(ProjectDir)Distribution\GameData" to "%KSP_DIR%\GameData" 
+      xcopy /E /Y "$(ProjectDir)Distribution\GameData" "%KSP_DIR%\GameData"
+
+
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

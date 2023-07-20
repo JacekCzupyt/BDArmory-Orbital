@@ -887,10 +887,13 @@ namespace BDArmory.Weapons.Missiles
                         }
                         else
                         {
-                            for (int i = 0; i < scannedTargets.Length; i++)
-                            {
-                                if (scannedTargets[i].exists && (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude < sqrThresh)
-                                {
+                            for (int i = 0; i < scannedTargets.Length; i++) {
+                                var originOffset = FloatingOrigin.fetch.offsetNonKrakensbane;
+                                if (scannedTargets[i].exists &&
+                                    (scannedTargets[i].predictedPosition -
+                                        radarTarget.predictedPosition +
+                                        originOffset).sqrMagnitude <
+                                    sqrThresh) {
                                     //re-check engagement envelope, only lock appropriate targets
                                     if (CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
                                     {
