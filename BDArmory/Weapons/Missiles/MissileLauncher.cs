@@ -2488,7 +2488,7 @@ namespace BDArmory.Weapons.Missiles
                     var (desiredAcceleration, timeToTarget) = ComputeVacuumIntercept(
                         TargetPosition - part.transform.position,
                         TargetVelocity - vessel.obt_velocity,
-                        TargetAcceleration,
+                        TargetAcceleration - vessel.graviticAcceleration,
                         maxMissileAcceleration
                     );
                     if (!desiredAcceleration.HasValue) { // If no solution found, disregard target acceleration

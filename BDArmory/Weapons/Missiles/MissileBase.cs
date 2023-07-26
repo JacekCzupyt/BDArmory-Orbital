@@ -449,6 +449,8 @@ namespace BDArmory.Weapons.Missiles
                 {
                     // Debug.Log($"DEBUG {Time.time} Correcting for floating origin shift of {(Vector3)BDKrakensbane.FloatingOriginOffset:G3} ({(Vector3)BDKrakensbane.FloatingOriginOffsetNonKrakensbane:G3}) for {vessel.vesselName} ({SourceVessel})");
                     TargetPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
+                    if(radarTarget is { exists: true, orbital: true })
+                        radarTarget.position -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
                 }
             }
         }
@@ -888,24 +890,19 @@ namespace BDArmory.Weapons.Missiles
                         else
                         {
                             for (int i = 0; i < scannedTargets.Length; i++) {
-                                var originOffset = FloatingOrigin.fetch.offsetNonKrakensbane;
                                 if (scannedTargets[i].exists &&
-                                    (scannedTargets[i].predictedPosition -
-                                        radarTarget.predictedPosition +
-                                        originOffset).sqrMagnitude <
-                                    sqrThresh) {
+                                    (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude < sqrThresh) {
                                     //re-check engagement envelope, only lock appropriate targets
-                                    if (CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
-                                    {
+                                    if (CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo)) {
                                         radarTarget = scannedTargets[i];
                                         TargetAcquired = true;
                                         radarLOALSearching = false;
                                         if (weaponClass == WeaponClasses.SLW)
                                         {
-                                            TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
+                                            TargetPosition = radarTarget.predictedPosition;
                                         }
                                         else
-                                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
+                                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
 
                                         TargetVelocity = radarTarget.velocity;
                                         TargetAcceleration = radarTarget.acceleration;
