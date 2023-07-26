@@ -995,7 +995,7 @@ namespace BDArmory.Weapons.Missiles
                 //RadarUtils.UpdateRadarLock(ray, lockedSensorFOV * 3, activeRadarMinThresh * 2, ref scannedTargets, 0.4f, pingRWR, RadarWarningReceiver.RWRThreatTypes.MissileLock, radarSnapshot);
                 RadarUtils.RadarUpdateMissileLock(ray, lockedSensorFOV * 3, ref scannedTargets, 0.4f, this);
 
-                float sqrThresh = targetVessel != null ? 1000000 : 100000000f; // 1000 * 1000 : 300 * 300; Expand threshold if no target to search for, grab first available target
+                float sqrThresh = targetVessel != null ? 1000000f : activeRadarRange*activeRadarRange; // 1000 * 1000 : radarrange^2; Expand threshold if no target to search for, grab first available target
 
                 float smallestAngle = maxOffBoresight;
                 TargetSignatureData lockedTarget = TargetSignatureData.noTarget;
