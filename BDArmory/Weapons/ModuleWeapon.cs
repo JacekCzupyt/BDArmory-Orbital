@@ -284,7 +284,10 @@ namespace BDArmory.Weapons
                 return WeaponClasses.DefenseLaser;
             }
         }
-
+        public ModuleWeapon GetWeaponModule()
+        {
+            return this;
+        }
         public Part GetPart()
         {
             return part;
@@ -576,7 +579,7 @@ namespace BDArmory.Weapons
         public bool descendingOrder = true;
         public float thrustDeviation = 0.10f;
         [KSPField] public bool rocketPod = true; //is the RL a rocketpod, or a gyrojet gun?
-        [KSPField] public bool externalAmmo = false; //used for rocketlaunchers that are Gyrojet guns drawing from ammoboxes instead of internals 
+        [KSPField] public bool externalAmmo = true; // weapon is supplied by external ammo boxes isntead of internal supplly (e.g. guns vs rocket pods)
         Transform[] rockets;
         double rocketsMax;
         private RocketInfo rocketInfo;
@@ -657,6 +660,9 @@ namespace BDArmory.Weapons
 
         [KSPField]
         public string bulletTexturePath = "BDArmory/Textures/bullet";
+
+        [KSPField]
+        public string smokeTexturePath = ""; //"BDArmory/Textures/tracerSmoke";
 
         [KSPField]
         public string laserTexturePath = "BDArmory/Textures/laser";
@@ -1085,7 +1091,7 @@ namespace BDArmory.Weapons
             {
                 try
                 {
-                    baseRPM = float.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "roundsPerMinute"));
+                    baseRPM = float.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "roundsPerMinute", "fireTransformName", fireTransformName)); //if multiple moduleWeapons, make sure this grabs the right one unsing fireTransformname as an ID
                 }
                 catch
                 {
@@ -1179,6 +1185,15 @@ namespace BDArmory.Weapons
             }
             if (eWeaponType == WeaponTypes.Rocket)
             {
+                try
+                {
+                    externalAmmo = bool.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "externalAmmo"));
+                }
+                catch
+                {
+                    externalAmmo = false;
+                    Debug.LogError($"[BDArmory.ModuleWeapon] {shortName} missing externalAmmo field in .cfg! Fix your .cfg!");
+                }
                 if (rocketPod && externalAmmo)
                 {
                     BeltFed = false;
@@ -1585,6 +1600,18 @@ namespace BDArmory.Weapons
                     maxEffectiveDistance = 1000;
                     InitializeEngagementRange(minSafeDistance, 1000);
                     engageRangeMax = 1000;
+                }
+            }
+            if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 60)
+            {
+                if (WeaponName == "bahaChemLaser")
+                {
+                    if (turret != null)
+                    {
+                        turret.minPitch = -0.1f;
+                        turret.maxPitch = 0.1f;
+                        turret.yawRange = 0.2f;
+                    }
                 }
             }
         }
@@ -2069,7 +2096,6 @@ namespace BDArmory.Weapons
                                     pBullet.sourceVessel = vessel;
                                     pBullet.team = weaponManager.Team.Name;
                                     pBullet.bulletTexturePath = bulletTexturePath;
-
                                     pBullet.projectileColor = projectileColorC;
                                     pBullet.startColor = startColorC;
                                     pBullet.fadeColor = fadeColor;
@@ -2080,17 +2106,25 @@ namespace BDArmory.Weapons
                                         pBullet.tracerStartWidth = tracerStartWidth;
                                         pBullet.tracerEndWidth = tracerEndWidth;
                                         pBullet.tracerLength = tracerLength;
+                                        pBullet.tracerLuminance = tracerLuminance;
+                                        if (!string.IsNullOrEmpty(smokeTexturePath)) pBullet.smokeTexturePath = smokeTexturePath;
                                     }
                                     else
                                     {
                                         pBullet.tracerStartWidth = nonTracerWidth;
                                         pBullet.tracerEndWidth = nonTracerWidth;
+                                        if (!string.IsNullOrEmpty(smokeTexturePath))
+                                        {
+                                            pBullet.projectileColor = Color.grey;
+                                            pBullet.startColor = Color.grey;
+                                            pBullet.tracerLength = 0;
+                                            pBullet.tracerLuminance = -1;
+                                            pBullet.projectileColor.a *= 0.5f;
+                                        }
                                         pBullet.startColor.a *= 0.5f;
                                         pBullet.projectileColor.a *= 0.5f;
-                                        pBullet.tracerLength = tracerLength * 0.4f;
                                     }
                                     pBullet.tracerDeltaFactor = tracerDeltaFactor;
-                                    pBullet.tracerLuminance = tracerLuminance;
                                     pBullet.bulletDrop = bulletDrop;
 
                                     if (bulletInfo.tntMass > 0 || bulletInfo.beehive)
@@ -2504,7 +2538,7 @@ namespace BDArmory.Weapons
                                                     damage = initialDamage * TimeWarp.fixedDeltaTime;
                                                 }
                                             }
-                                            p.ReduceArmor(damage / 10000); //really should be tied into diffuisvity, density, and SafeUseTemp - lasers would need to melt/ablate material away; needs to be in cm^3. Review later
+                                            p.ReduceArmor(damage); //really should be tied into diffuisvity, density, and SafeUseTemp - lasers would need to melt/ablate material away; needs to be in cm^3. Review later
                                             p.AddDamage(damage);
                                             if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {p.name} on {p.vessel.GetName()}: {damage}");
                                             if (pulseLaser) BattleDamageHandler.CheckDamageFX(p, caliber, 1 + (damage / initialDamage), HEpulses, false, part.vessel.GetName(), hit, false, false); //beams will proc BD once every scoreAccumulatorTick
@@ -2512,7 +2546,7 @@ namespace BDArmory.Weapons
                                         if (HEpulses)
                                         {
                                             ExplosionFx.CreateExplosion(hit.point,
-                                                           (laserDamage / 10000),
+                                                           (laserDamage / 1000),
                                                            explModelPath, explSoundPath, ExplosionSourceType.Bullet, 1, null, vessel.vesselName, null);
                                         }
                                         if (Impulse != 0)
@@ -3001,9 +3035,19 @@ namespace BDArmory.Weapons
                 }
                 //else return true; //this is causing weapons thath have ECPerShot + standard ammo (railguns, etc) to not consume ammo, only EC
             }
-            if (part.RequestResource(ammoName.GetHashCode(), (double)AmmoPerShot) > 0)
+            if (externalAmmo)
             {
-                return true;
+                if (part.RequestResource(ammoName.GetHashCode(), (double)AmmoPerShot, ResourceFlowMode.STAGE_PRIORITY_FLOW_BALANCE) > 0)
+                {
+                    return true;
+                }
+            }
+            else //for guns with internal ammo supplies and no external, only draw from the weapon part
+            {
+                if (part.RequestResource(ammoName.GetHashCode(), (double)AmmoPerShot, ResourceFlowMode.NO_FLOW) > 0)
+                {
+                    return true;
+                }
             }
             StartCoroutine(IncrementRippleIndex(useRippleFire ? InitialFireDelay * TimeWarp.CurrentRate : 0)); //if out of ammo (howitzers, say, or other weapon with internal ammo, move on to next weapon; maybe it still has ammo
             isRippleFiring = true;

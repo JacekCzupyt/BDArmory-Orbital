@@ -442,7 +442,7 @@ namespace BDArmory.Utils
             UpdateLimits();
             fieldName.text = field.guiName;
             fieldNameNumeric.text = field.guiName;
-            fieldFormatString = $"G{semiLogFloatRange.sigFig + 2}"; // Show at most 2 digits beyond the requested sig. fig.
+            fieldFormatString = $"G{Mathf.Max(semiLogFloatRange.sigFig + 2, Mathf.CeilToInt(Mathf.Log10(semiLogFloatRange.maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
             float value = GetFieldValue();
             SetFieldValue(value);
             UpdateDisplay(value);

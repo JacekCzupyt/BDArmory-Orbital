@@ -423,9 +423,9 @@ namespace BDArmory.Weapons.Missiles
                 if (boosterFuelMass + cruiseFuelMass > initialMass * 0.95f)
                 {
                     Debug.LogWarning($"[BDArmory.MissileLauncher]: Error in configuration of {part.name}, boosterFuelMass: {boosterFuelMass} + cruiseFuelMass: {cruiseFuelMass} can't be greater than 95% of the missile mass {initialMass}, clamping to 80% of the missile mass.");
-                    if(boosterFuelMass > 0 || boostTime > 0)
+                    if (boosterFuelMass > 0 || boostTime > 0)
                     {
-                        if(cruiseFuelMass > 0 || cruiseTime > 0)
+                        if (cruiseFuelMass > 0 || cruiseTime > 0)
                         {
                             boosterFuelMass = Mathf.Clamp(boosterFuelMass, 0, initialMass * 0.4f);
                             cruiseFuelMass = Mathf.Clamp(cruiseFuelMass, 0, initialMass * 0.4f);
@@ -445,7 +445,6 @@ namespace BDArmory.Weapons.Missiles
             {
                 shortName = part.partInfo.title;
             }
-            if (BDArmorySettings.DEBUG_MISSILES) shortName = $"{SourceVessel.GetName()}'s {GetShortName()}";
             gaplessEmitters = new List<BDAGaplessParticleEmitter>();
             pEmitters = new List<KSPParticleEmitter>();
             boostEmitters = new List<KSPParticleEmitter>();
@@ -1049,8 +1048,11 @@ namespace BDArmory.Weapons.Missiles
 
             var wpm = VesselModuleRegistry.GetMissileFire(SourceVessel != null ? SourceVessel : vessel, true);
             if (wpm != null) Team = wpm.Team;
-            if (SourceVessel == null) SourceVessel = vessel;
-
+            if (SourceVessel == null)
+            {
+                SourceVessel = vessel;
+                if (BDArmorySettings.DEBUG_MISSILES && !multiLauncher) shortName = $"{SourceVessel.GetDisplayName()}'s {GetShortName()}";
+            }
             if (multiLauncher && multiLauncher.isMultiLauncher)
             {
                 //multiLauncher.rippleRPM = wpm.rippleRPM;               
@@ -1103,6 +1105,7 @@ namespace BDArmory.Weapons.Missiles
             ml.GuidanceMode = GuidanceMode;
             //wpm.SendTargetDataToMissile(ml);
             ml.TimeFired = Time.time;
+            if (BDArmorySettings.DEBUG_MISSILES) shortName = $"{SourceVessel.GetDisplayName()}'s {GetShortName()}";
             ml.vessel.vesselName = GetShortName();
             ml.DetonationDistance = DetonationDistance;
             ml.DetonateAtMinimumDistance = DetonateAtMinimumDistance;
@@ -1142,8 +1145,8 @@ namespace BDArmory.Weapons.Missiles
                 ml.TimeToImpact = float.PositiveInfinity;
                 ml.initMaxAoA = maxAoA;
             }
-/*            if (GuidanceMode == GuidanceModes.AAMHybrid)
-                ml.pronavGain = pronavGain;*/
+            /*            if (GuidanceMode == GuidanceModes.AAMHybrid)
+                            ml.pronavGain = pronavGain;*/
             if (GuidanceMode == GuidanceModes.APN || GuidanceMode == GuidanceModes.PN)
                 ml.pronavGain = pronavGain;
 
@@ -1213,6 +1216,7 @@ namespace BDArmory.Weapons.Missiles
         }
         public void MissileLaunch()
         {
+            if (gameObject is null || !gameObject.activeInHierarchy) { Debug.LogError($"[BDArmory.MissileLauncher]: Trying to fire non-existent missile {missileName} {(reloadableRail != null ? " (reloadable)" : "")} on {SourceVesselName} at {TargetVesselName}!"); return; }
             HasFired = true;
             try // FIXME Remove this once the fix is sufficiently tested.
             {
@@ -1249,7 +1253,7 @@ namespace BDArmory.Weapons.Missiles
                 AddTargetInfoToVessel();
                 StartCoroutine(DecoupleRoutine());
 
-                vessel.vesselType = VesselType.Probe;                
+                vessel.vesselType = VesselType.Probe;
                 //setting ref transform for navball
                 GameObject refObject = new GameObject();
                 refObject.transform.rotation = Quaternion.LookRotation(-transform.up, transform.forward);
@@ -1655,7 +1659,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                     }
 
-                    if ((GuidanceMode == GuidanceModes.AAMLead) || (GuidanceMode == GuidanceModes.APN) || (GuidanceMode == GuidanceModes.PN) || (GuidanceMode == GuidanceModes.AAMLoft) || (GuidanceMode == GuidanceModes.AAMPure) )// || (GuidanceMode == GuidanceModes.AAMHybrid))
+                    if ((GuidanceMode == GuidanceModes.AAMLead) || (GuidanceMode == GuidanceModes.APN) || (GuidanceMode == GuidanceModes.PN) || (GuidanceMode == GuidanceModes.AAMLoft) || (GuidanceMode == GuidanceModes.AAMPure))// || (GuidanceMode == GuidanceModes.AAMHybrid))
                     {
                         AAMGuidance();
                     }
@@ -1870,11 +1874,11 @@ namespace BDArmory.Weapons.Missiles
                     yield break;
                 }
 
-            StartCoroutine(DeployAnimRoutine());
+            if (deployStates != null) StartCoroutine(DeployAnimRoutine());
             yield return new WaitForSecondsFixed(dropTime);
             yield return StartCoroutine(BoostRoutine());
 
-            StartCoroutine(FlightAnimRoutine());
+            if (animStates != null) StartCoroutine(FlightAnimRoutine());
             yield return new WaitForSecondsFixed(cruiseDelay);
             yield return StartCoroutine(CruiseRoutine());
         }

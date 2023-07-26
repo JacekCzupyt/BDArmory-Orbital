@@ -215,11 +215,18 @@ namespace BDArmory.Control
                 while (mmes.MoveNext())
                 {
                     if (mmes.Current == null) continue;
-                    if (enable)
+
+                    bool afterburnerHasFuel = true;
+                    using (var fuel = mmes.Current.SecondaryEngine.propellants.GetEnumerator())
+                        while (fuel.MoveNext())
+                        {
+                            if (!GetABresources(fuel.Current.id)) afterburnerHasFuel = false;
+                        }
+                    if (enable && afterburnerHasFuel)
                     {
                         if (mmes.Current.runningPrimary)
                         {
-                            mmes.Current.Events["ModeEvent"].Invoke();
+                            if (afterburnerHasFuel) mmes.Current.Events["ModeEvent"].Invoke();
                         }
                     }
                     else
@@ -229,9 +236,14 @@ namespace BDArmory.Control
                             mmes.Current.Events["ModeEvent"].Invoke();
                         }
                     }
+
                 }
         }
-
+        public bool GetABresources(int fuelID)
+        {
+            vessel.GetConnectedResourceTotals(fuelID, out double fuelCurrent, out double fuelMax);
+            return fuelCurrent > 0;
+        }
         private static bool IsAfterBurnerEngine(MultiModeEngine engine)
         {
             if (engine == null)

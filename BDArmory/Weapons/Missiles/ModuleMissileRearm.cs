@@ -71,7 +71,8 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
             this.part.force_activate();
             var MML = part.FindModuleImplementing<MultiMissileLauncher>();
             if (MML == null || MML && MML.isClusterMissile) MissileName = part.name;
-            StartCoroutine(GetMissileValues());
+            if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
+                StartCoroutine(GetMissileValues());
             //GameEvents.onEditorShipModified.Add(ShipModified);
             UI_FloatRange Ammo = (UI_FloatRange)Fields["ammoCount"].uiControlEditor;
             Ammo.maxValue = maxAmmo;
@@ -85,16 +86,16 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
         {
             if (part.parent)
             {
-
+                /*
                 if (part.parent.FindModuleImplementing<MissileTurret>()) //turrets work... sorta. Missiles are reloading where they should be, but there's some massive force being imparted on the turret every launch
                 {// test UpdateMissileChildren fix used for rotary rails?
                     ammoCount = 1;
                     Fields["ammoCount"].guiActiveEditor = false;
                 }
                 else
-                {
+                {*/
                     Fields["ammoCount"].guiActiveEditor = true;
-                }
+                //}
 
             }
         }
@@ -115,7 +116,7 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                         continue;
                     if (parts.Current.partPrefab.partInfo.name != MissileName) continue;
                     missilePart = parts.Current;
-                    //Debug.Log($"[BDArmory.ModuleMissileRearm]: found {missilePart.partPrefab.partInfo.name}");
+                    Debug.Log($"[BDArmory.ModuleMissileRearm]: found {missilePart.partPrefab.partInfo.name}");
                     break;
                 }
             if (missilePart == null)

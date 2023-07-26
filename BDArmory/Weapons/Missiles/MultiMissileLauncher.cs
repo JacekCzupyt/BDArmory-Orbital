@@ -5,6 +5,7 @@ using BDArmory.Settings;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
+using BDArmory.WeaponMounts;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -49,13 +50,16 @@ namespace BDArmory.Weapons.Missiles
 		[KSPField] public bool displayOrdinance = true; //display missile dummies (for rails and the like) or hide them (bomblet dispensers, gun-launched missiles, etc)
         [KSPField] public bool permitJettison = false; //allow jettisoning of missiles for multimissile launchrails and similar
         AnimationState deployState;
-        ModuleMissileRearm missileSpawner = null;
+        public ModuleMissileRearm missileSpawner = null;
         MissileLauncher missileLauncher = null;
         MissileFire wpm = null;
         private int tubesFired = 0;
         [KSPField(isPersistant = true)]
         private bool LoadoutModified = false;
         public BDTeam Team = BDTeam.Get("Neutral");
+
+        public MissileTurret turret;
+
         public void Start()
         {
             MakeMissileArray();           
@@ -74,6 +78,7 @@ namespace BDArmory.Weapons.Missiles
                     deployState.enabled = true;
                 }
             }
+
             StartCoroutine(DelayedStart());
         }
 
@@ -82,6 +87,8 @@ namespace BDArmory.Weapons.Missiles
             yield return new WaitForFixedUpdate();
             missileLauncher = part.FindModuleImplementing<MissileLauncher>();
             missileSpawner = part.FindModuleImplementing<ModuleMissileRearm>();
+            turret = part.FindModuleImplementing<MissileTurret>();
+            if (turret != null) turret.missilepod = missileLauncher;
             if (missileSpawner == null) //MultiMissile launchers/cluster missiles need a MMR module for spawning their submunitions, so add one if not present in case cfg not set up properly
             {
                 missileSpawner = (ModuleMissileRearm)part.AddModule("ModuleMissileRearm");
@@ -161,6 +168,7 @@ namespace BDArmory.Weapons.Missiles
                         missileLauncher.DetonationDistance = 0f;
                     }
                 }
+
                 GUIUtils.RefreshAssociatedWindows(part);
             }
             missileSpawner.UpdateMissileValues();
@@ -502,6 +510,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     ml.shortName = missileLauncher.GetShortName() + " Missile";
                 }
+                if (BDArmorySettings.DEBUG_MISSILES) ml.shortName = $"{ml.SourceVessel.GetDisplayName()}'s {missileLauncher.GetShortName()} Missile";
                 ml.vessel.vesselName = ml.GetShortName();
                 ml.TimeFired = Time.time;
                 if (!isClusterMissile)

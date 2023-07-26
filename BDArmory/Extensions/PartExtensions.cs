@@ -496,6 +496,7 @@ namespace BDArmory.Extensions
                 {
                     return false;
                 }
+                if (part.partInfo.bulkheadProfiles.Contains("mk2")) return false;
                 else return true;
             }
             else if (part.Modules.Contains("ModuleControlSurface") ||

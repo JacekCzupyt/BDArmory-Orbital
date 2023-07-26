@@ -10,6 +10,7 @@ using BDArmory.Competition;
 using BDArmory.Extensions;
 using BDArmory.Guidances;
 using BDArmory.Settings;
+using BDArmory.VesselSpawning;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons;
@@ -286,8 +287,15 @@ namespace BDArmory.Control
         //AutoTuning Speed
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_PIDAutoTuningSpeed", //Auto-tuning Speed
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 50f, maxValue = 800f, stepIncrement = 5.0f, scene = UI_Scene.All)]
+            UI_FloatRange(minValue = 50f, maxValue = 800f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float autoTuningSpeed = 200f;
+
+        // Re-centering Distance
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_PIDAutoTuningRecenteringDistance",
+            groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 5f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.All)]
+        public float autoTuningRecenteringDistance = 15f;
+        public float autoTuningRecenteringDistanceSqr { get; private set; }
 
         // Fixed fields for auto-tuning (only accessible via the AI GUI for now)
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false)] public bool autoTuningOptionFixedP = false;
@@ -645,7 +653,9 @@ namespace BDArmory.Control
             { nameof(dynamicSteerDampingYawFactor), 100f },
             { nameof(DynamicDampingRollMin), 100f },
             { nameof(DynamicDampingRollMax), 100f },
-            { nameof(dynamicSteerDampingRollFactor), 100f }
+            { nameof(dynamicSteerDampingRollFactor), 100f },
+            { nameof(autoTuningAltitude), 100000f },
+            { nameof(autoTuningSpeed), 3000f }
         };
         Dictionary<string, float> altMinValues = new Dictionary<string, float> {
             { nameof(extendAngleAirToAir), -90f },
@@ -1299,6 +1309,19 @@ namespace BDArmory.Control
             ImmelmannTurnCosAngle = -Mathf.Cos(ImmelmannTurnAngle * Mathf.Deg2Rad);
         }
 
+        public void SetOnAutoTuningRecenteringDistanceChanged()
+        {
+            UI_FloatRange field = (UI_FloatRange)Fields["autoTuningRecenteringDistance"].uiControlEditor;
+            field.onFieldChanged = OnAutoTuningRecenteringDistanceChanged;
+            field = (UI_FloatRange)Fields["autoTuningRecenteringDistance"].uiControlFlight;
+            field.onFieldChanged = OnAutoTuningRecenteringDistanceChanged;
+            OnAutoTuningRecenteringDistanceChanged(null, null);
+        }
+        public void OnAutoTuningRecenteringDistanceChanged(BaseField field, object ob)
+        {
+            autoTuningRecenteringDistanceSqr = autoTuningRecenteringDistance * autoTuningRecenteringDistance * 1e6f;
+        }
+
         IEnumerator FixAltitudesSectionLayout() // Fix the layout of the Altitudes section by briefly disabling the fields underneath the one that was removed.
         {
             var maxAltitudeToggleField = Fields["maxAltitudeToggle"];
@@ -1585,6 +1608,7 @@ namespace BDArmory.Control
             SetOnExtendAngleA2AChanged();
             SetOnTerrainAvoidanceCriticalAngleChanged();
             SetOnImmelmannTurnAngleChanged();
+            SetOnAutoTuningRecenteringDistanceChanged();
             SetupAutoTuneSliders();
             if ((HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor) && storedSettings != null && storedSettings.ContainsKey(HighLogic.LoadedSceneIsFlight ? vessel.GetDisplayName() : EditorLogic.fetch.ship.shipName))
             {
@@ -1832,7 +1856,7 @@ namespace BDArmory.Control
             }
             if (weaponManager != null)
             {
-                if (weaponManager.incomingMissileTime <= weaponManager.cmThreshold)
+                if (weaponManager.incomingMissileTime <= weaponManager.evadeThreshold)
                 {
                     threatRating = -1f; // Allow entering evasion code if we're under missile fire
                     minimumEvasionTime = 0f; //  Trying to evade missile threats when they don't exist will result in NREs
@@ -2957,7 +2981,7 @@ namespace BDArmory.Control
                     AdjustThrottle(targetSpeed, false, useAB);
                 }
 
-                if (weaponManager.incomingMissileVessel != null && (weaponManager.ThreatClosingTime(weaponManager.incomingMissileVessel) <= weaponManager.cmThreshold)) // Missile evasion
+                if (weaponManager.incomingMissileVessel != null && (weaponManager.ThreatClosingTime(weaponManager.incomingMissileVessel) <= weaponManager.evadeThreshold)) // Missile evasion
                 {
                     if ((weaponManager.ThreatClosingTime(weaponManager.incomingMissileVessel) <= 1.5f) && (!weaponManager.isChaffing)) // Missile is about to impact, pull a hard turn
                     {
@@ -4324,7 +4348,7 @@ namespace BDArmory.Control
             else if (recentering)
             {
                 AI.CommandFlyTo((Vector3)startCoords);
-                if ((FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z) - AI.vessel.transform.position).sqrMagnitude < 1e6f) // Within 1km is good enough.
+                if ((FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z) - AI.vessel.transform.position).sqrMagnitude < 0.01f * AI.autoTuningRecenteringDistanceSqr) // Within 10% of recentering distance.
                 {
                     recentering = false;
                     if (AI.autoTuningLossLabel.EndsWith("   re-centering")) AI.autoTuningLossLabel = AI.autoTuningLossLabel.Remove(AI.autoTuningLossLabel.Length - 15);
@@ -4412,7 +4436,7 @@ namespace BDArmory.Control
 
             // pitchChange = 30f * UnityEngine.Random.Range(-1f, 1f) * UnityEngine.Random.Range(-1f, 1f); // Adjust pitch by ±30°, biased towards 0°.
 
-            if ((FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z) - AI.vessel.transform.position).sqrMagnitude > 225e6f) // Beyond 15km should be sufficient.
+            if ((FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z) - AI.vessel.transform.position).sqrMagnitude > AI.autoTuningRecenteringDistanceSqr)
             {
                 recentering = true;
                 AI.autoTuningLossLabel += "   re-centering";
@@ -4627,6 +4651,21 @@ namespace BDArmory.Control
             if (!HighLogic.LoadedSceneIsFlight) return;
             startCoords = FlightGlobals.currentMainBody.GetLatitudeAndLongitude(AI.vessel.transform.position);
             startCoords.z = (float)FlightGlobals.currentMainBody.TerrainAltitude(startCoords.x, startCoords.y) + AI.autoTuningAltitude;
+
+            // Move the vessel to the start position and make sure the AI and engines are active.
+            if (AI.vessel.LandedOrSplashed)
+            {
+                AI.vessel.Landed = false;
+                AI.vessel.Splashed = false;
+                VesselMover.Instance.PickUpAndDrop(AI.vessel, AI.autoTuningAltitude);
+            }
+            else
+            {
+                AI.vessel.SetPosition(FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z));
+            }
+            if (SpawnUtils.CountActiveEngines(AI.vessel) == 0) SpawnUtils.ActivateAllEngines(AI.vessel);
+            AI.ActivatePilot();
+            recentering = true;
         }
     }
 }

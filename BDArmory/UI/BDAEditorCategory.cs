@@ -357,6 +357,14 @@ namespace BDArmory.UI
 
         private bool PartInCurrentCategory(AvailablePart part)
         {
+            if (part.partConfig.HasValue("TechRequired"))
+            {
+                var research = part.partConfig.GetValue("Techrequired");
+                if (research == "Unresearchable")
+                {
+                    part.partConfig.RemoveValue(BDACategoryKey);
+                }
+            }
             switch (BDArmorySettings.SHOW_CATEGORIES ? CurrentCategory : "Legacy")
             {
                 // A few special cases.

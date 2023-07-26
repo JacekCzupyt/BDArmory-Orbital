@@ -36,6 +36,12 @@ namespace BDArmory.Weapons.Missiles
             return weaponClass;
         }
 
+        ModuleWeapon weap = null;
+        public ModuleWeapon GetWeaponModule()
+        {
+            return weap;
+        }
+
         public string GetMissileType()
         {
             return missileType;
@@ -128,7 +134,10 @@ namespace BDArmory.Weapons.Missiles
         public float frontAspectHeatModifier = 1f;                   // Modifies heat value returned to missiles outside of ~50 deg exhaust cone from non-prop engines. Only takes affect when ASPECTED_IR_SEEKERS = true in settings.cfg
 
         [KSPField]
-        public float chaffEffectivity = 1f;                            // Modifies  how the missile targeting is affected by chaff, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores chaff), higher values means more affected
+        public float chaffEffectivity = 1f;                            // Modifies how the missile targeting is affected by chaff, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores chaff), higher values means more affected
+
+        [KSPField]
+        public float flareEffectivity = 1f;                            // Modifies how the missile targeting is affected by flares, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores flares), higher values means more affected
 
         [KSPField]
         public bool allAspect = false;                                 // DEPRECATED, replaced by uncagedIRLock. uncagedIRLock is automatically set to this value upon loading (to maintain compatability with old BDA mods)
@@ -1341,7 +1350,8 @@ namespace BDArmory.Weapons.Missiles
 
                                         if (partHit == null) continue;
                                         if (ProjectileUtils.IsIgnoredPart(partHit)) continue; // Ignore ignored parts.
-                                        if (partHit.vessel == vessel || partHit.vessel == SourceVessel) continue;
+                                        if (partHit.vessel == vessel || partHit.vessel == SourceVessel) continue; // Ignore source vessel
+                                        if (partHit.IsMissile() && partHit.GetComponent<MissileBase>().SourceVessel == SourceVessel) continue; // Ignore other missiles fired by same vessel
                                         if (partHit.vessel.vesselType == VesselType.Debris) continue; // Ignore debris
 
                                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Missile proximity sphere hit | Distance overlap = " + optimalDistance + "| Part name = " + partHit.name);

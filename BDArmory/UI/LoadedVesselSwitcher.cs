@@ -345,7 +345,7 @@ namespace BDArmory.UI
         private void WindowVesselSwitcher(int id)
         {
             int numButtons = 11;
-            int numButtonsOnLeft = 5;
+            int numButtonsOnLeft = 6;
             GUI.DragWindow(new Rect(numButtonsOnLeft * _buttonHeight + _margin, 0f, BDArmorySettings.VESSEL_SWITCHER_WINDOW_WIDTH - numButtons * _buttonHeight - 3f * _margin, _titleHeight));
             GUI.Label(new Rect(BDArmorySettings.VESSEL_SWITCHER_WINDOW_WIDTH - (numButtons - numButtonsOnLeft) * _buttonHeight - _margin - 70f, 4f, 70f, _titleHeight - 4f), BDArmorySetup.Version);
             if (GUI.Button(new Rect(0f * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "><", BDArmorySetup.BDGuiSkin.button)) // Don't get so small that the buttons get hidden.
@@ -372,7 +372,11 @@ namespace BDArmory.UI
                 BDArmorySettings.VESSEL_SWITCHER_WINDOW_OLD_DISPLAY_STYLE = !BDArmorySettings.VESSEL_SWITCHER_WINDOW_OLD_DISPLAY_STYLE;
                 BDArmorySetup.SaveConfig();
             }
-            if (GUI.Button(new Rect(4f * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "UI", BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(4f * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "Sc", ScoreWindow.Instance.IsVisible ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            {
+                ScoreWindow.Instance.SetVisible(!ScoreWindow.Instance.IsVisible);
+            }
+            if (GUI.Button(new Rect(5f * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "UI", BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
             {
                 BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI = !BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI;
                 BDArmorySetup.SaveConfig();
@@ -1111,6 +1115,8 @@ namespace BDArmory.UI
                     timeSinceLastCheck = minCameraCheckInterval + 1f;
                 }
             }
+
+            if (ModIntegration.MouseAimFlight.IsMouseAimActive) return; // Don't switch while MouseAimFlight is active.
 
             if (timeSinceLastCheck > minCameraCheckInterval)
             {
