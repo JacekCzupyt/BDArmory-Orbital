@@ -47,7 +47,7 @@ namespace BDArmory.Extensions
         /// <param name="v"></param>
         /// <param name="altitudeCheck"></param>
         /// <returns></returns>
-        public static Vector3d Velocity(this Vessel v, bool altitudeCheck = true)
+        public static Vector3d Velocity(this Vessel v, bool altitudeCheck = false)
         {
             try
             {

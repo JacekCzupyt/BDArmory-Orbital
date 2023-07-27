@@ -1050,8 +1050,14 @@ namespace BDArmory.Weapons.Missiles
                 {
                     radarTarget = TargetSignatureData.noTarget;
                     TargetAcquired = true;
-                    TargetPosition = transform.position + (startDirection * 500);
-                    TargetVelocity = Vector3.zero;
+                    if (vessel.InOrbit()) {
+                        TargetPosition = transform.position + (startDirection * 5000);
+                        TargetVelocity = vessel.Velocity();
+                    }
+                    else {
+                        TargetPosition = transform.position + (startDirection * 500);
+                        TargetVelocity = Vector3.zero;
+                    }
                     TargetAcceleration = Vector3.zero;
                     radarLOALSearching = true;
                     _radarFailTimer += Time.fixedDeltaTime;

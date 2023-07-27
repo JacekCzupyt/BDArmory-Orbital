@@ -2475,51 +2475,41 @@ namespace BDArmory.Weapons.Missiles
         }
 
         void VacuumGuidance(float atmo) {
-            if (TargetAcquired) {
-                if (atmo > 0) {
-                    // If in atmosphere
-                    part.transform.rotation = Quaternion.RotateTowards(
-                        part.transform.rotation,
-                        Quaternion.LookRotation(TargetPosition - part.transform.position, part.transform.up),
-                        debugTurnRate * Time.fixedDeltaTime // TODO: improve turn rate logic
-                    );
-                    DoRCS(Vector3.Reflect(TargetVelocity - vessel.obt_velocity, part.transform.forward));
-                    // TODO: calculate desired acceleration
-                }
-                else {
-                    // If in vacuum
-                    float maxMissileAcceleration = (float)(thrust / vessel.totalMass);
-                    var (desiredAcceleration, timeToTarget) = ComputeVacuumIntercept(
+            Vector3? desiredAcceleration = null;
+            float maxMissileAcceleration = (float)(thrust / vessel.totalMass);
+            if (!TargetAcquired) {
+                desiredAcceleration = part.transform.forward * maxMissileAcceleration;
+            }
+            else {
+                (desiredAcceleration, var timeToTarget) = ComputeVacuumIntercept(
+                    TargetPosition - part.transform.position,
+                    TargetVelocity - vessel.obt_velocity,
+                    TargetAcceleration - vessel.graviticAcceleration,
+                    maxMissileAcceleration
+                );
+                if (!desiredAcceleration.HasValue) {
+                    // If no solution found, disregard target acceleration
+                    (desiredAcceleration, timeToTarget) = ComputeVacuumIntercept(
                         TargetPosition - part.transform.position,
                         TargetVelocity - vessel.obt_velocity,
-                        TargetAcceleration - vessel.graviticAcceleration,
+                        Vector3.zero,
                         maxMissileAcceleration
                     );
-                    if (!desiredAcceleration.HasValue) { // If no solution found, disregard target acceleration
-                        (desiredAcceleration, timeToTarget) = ComputeVacuumIntercept(
-                            TargetPosition - part.transform.position,
-                            TargetVelocity - vessel.obt_velocity,
-                            Vector3.zero, 
-                            maxMissileAcceleration
-                        );
-                    }
-                    if (!desiredAcceleration.HasValue) throw new Exception("Desired acceleration not found");
-                    
-                    DrawDebugLine(part.transform.position, part.transform.position + desiredAcceleration.Value);
-                    
-                    // Rotate missile
-                    part.transform.rotation = Quaternion.RotateTowards(
-                        part.transform.rotation,
-                        Quaternion.LookRotation(desiredAcceleration.Value, part.transform.up),
-                        debugTurnRate * Time.fixedDeltaTime // TODO: improve turn rate logic
-                    );
-
-                    Throttle = Vector3.Dot(part.transform.forward, desiredAcceleration.Value.normalized);
-
-                    if (hasRCS) {
-                        DoRCS(desiredAcceleration.Value * (float)vessel.totalMass);
-                    }
                 }
+            }
+            if (!desiredAcceleration.HasValue) throw new Exception("Desired acceleration not found");
+
+            // Rotate missile
+            part.transform.rotation = Quaternion.RotateTowards(
+                part.transform.rotation,
+                Quaternion.LookRotation(desiredAcceleration.Value, part.transform.up),
+                debugTurnRate * Time.fixedDeltaTime // TODO: improve turn rate logic
+            );
+
+            Throttle = Vector3.Dot(part.transform.forward, desiredAcceleration.Value.normalized);
+
+            if (hasRCS) {
+                DoRCS(desiredAcceleration.Value * (float)vessel.totalMass);
             }
         }
         
