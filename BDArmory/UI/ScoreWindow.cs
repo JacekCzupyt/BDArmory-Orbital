@@ -147,7 +147,7 @@ namespace BDArmory.UI
 
             GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(autoResizingWindow));
             var progress = BDATournament.Instance.GetTournamentProgress();
-            GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_BDAScores_Round")} {progress.Item1 + 1} / {progress.Item2}, {StringUtils.Localize("#LOC_BDArmory_BDAScores_Heat")} {progress.Item3 + 1} / {progress.Item4}", leftLabel);
+            GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_BDAScores_Round")} {progress.Item1} / {progress.Item2}, {StringUtils.Localize("#LOC_BDArmory_BDAScores_Heat")} {progress.Item3} / {progress.Item4}", leftLabel);
             if (!autoResizingWindow) scoreScrollPos = GUILayout.BeginScrollView(scoreScrollPos);
             int rank = 0;
             using (var scoreField = showTeamScores ? BDATournament.Instance.GetRankedTeamScores.GetEnumerator() : BDATournament.Instance.GetRankedScores.GetEnumerator())

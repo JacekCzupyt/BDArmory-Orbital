@@ -541,11 +541,11 @@ namespace BDArmory.UI
                         {
                             var fieldInfo = typeof(BDModulePilotAI).GetField(field);
                             if (fieldInfo != null)
-                            { inputFields[field].currentValue = Convert.ToDouble(fieldInfo.GetValue(ActivePilot)); }
+                            { inputFields[field].SetCurrentValue(Convert.ToDouble(fieldInfo.GetValue(ActivePilot))); }
                             else // Check if it's a property instead of a field.
                             {
                                 var propInfo = typeof(BDModulePilotAI).GetProperty(field);
-                                inputFields[field].currentValue = Convert.ToDouble(propInfo.GetValue(ActivePilot));
+                                inputFields[field].SetCurrentValue(Convert.ToDouble(propInfo.GetValue(ActivePilot)));
                             }
                         }
                         catch (Exception e) { Debug.LogError($"[BDArmory.BDArmoryAIGUI]: Failed to set current value of {field}: " + e.Message + "\n" + e.StackTrace); }
@@ -559,11 +559,11 @@ namespace BDArmory.UI
                         {
                             var fieldInfo = typeof(BDModuleSurfaceAI).GetField(field);
                             if (fieldInfo != null)
-                            { inputFields[field].currentValue = Convert.ToDouble(fieldInfo.GetValue(ActiveDriver)); }
+                            { inputFields[field].SetCurrentValue(Convert.ToDouble(fieldInfo.GetValue(ActiveDriver))); }
                             else // Check if it's a property instead of a field.
                             {
                                 var propInfo = typeof(BDModuleSurfaceAI).GetProperty(field);
-                                inputFields[field].currentValue = Convert.ToDouble(propInfo.GetValue(ActiveDriver));
+                                inputFields[field].SetCurrentValue(Convert.ToDouble(propInfo.GetValue(ActiveDriver)));
                             }
                         }
                         catch (Exception e) { Debug.LogError($"[BDArmory.BDArmoryAIGUI]: Failed to set current value of {field}: " + e.Message); }
@@ -1406,8 +1406,8 @@ namespace BDArmory.UI
                             if (ActivePilot.defaultAltitude != oldDefaultAlt)
                             {
                                 ActivePilot.ClampFields("defaultAltitude");
-                                inputFields["minAltitude"].currentValue = ActivePilot.minAltitude;
-                                inputFields["maxAltitude"].currentValue = ActivePilot.maxAltitude;
+                                inputFields["minAltitude"].SetCurrentValue(ActivePilot.minAltitude);
+                                inputFields["maxAltitude"].SetCurrentValue(ActivePilot.maxAltitude);
                             }
                             GUI.Label(SettinglabelRect(leftIndent, altLines), StringUtils.Localize("#LOC_BDArmory_DefaultAltitude") + ": " + ActivePilot.defaultAltitude.ToString("0"), Label);//"default altitude"
                             altLines++;
@@ -1433,8 +1433,8 @@ namespace BDArmory.UI
                             if (ActivePilot.minAltitude != oldMinAlt)
                             {
                                 ActivePilot.ClampFields("minAltitude");
-                                inputFields["defaultAltitude"].currentValue = ActivePilot.defaultAltitude;
-                                inputFields["maxAltitude"].currentValue = ActivePilot.maxAltitude;
+                                inputFields["defaultAltitude"].SetCurrentValue(ActivePilot.defaultAltitude);
+                                inputFields["maxAltitude"].SetCurrentValue(ActivePilot.maxAltitude);
                             }
                             GUI.Label(SettinglabelRect(leftIndent, altLines), StringUtils.Localize("#LOC_BDArmory_MinAltitude") + ": " + ActivePilot.minAltitude.ToString("0"), Label);//"min altitude"
                             altLines++;
@@ -1467,8 +1467,8 @@ namespace BDArmory.UI
                                 if (ActivePilot.maxAltitude != oldMaxAlt)
                                 {
                                     ActivePilot.ClampFields("maxAltitude");
-                                    inputFields["minAltitude"].currentValue = ActivePilot.minAltitude;
-                                    inputFields["defaultAltitude"].currentValue = ActivePilot.defaultAltitude;
+                                    inputFields["minAltitude"].SetCurrentValue(ActivePilot.minAltitude);
+                                    inputFields["defaultAltitude"].SetCurrentValue(ActivePilot.defaultAltitude);
                                 }
                                 GUI.Label(SettinglabelRect(leftIndent, altLines), StringUtils.Localize("#LOC_BDArmory_MaxAltitude") + ": " + ActivePilot.maxAltitude.ToString("0"), Label);//"max altitude"
                                 altLines++;
@@ -2144,7 +2144,7 @@ namespace BDArmory.UI
                             {
                                 ActivePilot.OnMinUpdated(null, null);
                                 var field = inputFields["turnRadiusTwiddleFactorMax"];
-                                field.currentValue = ActivePilot.turnRadiusTwiddleFactorMax;
+                                field.SetCurrentValue(ActivePilot.turnRadiusTwiddleFactorMax);
                             }
                             if (contextTipsEnabled)
                             {
@@ -2170,7 +2170,7 @@ namespace BDArmory.UI
                             {
                                 ActivePilot.OnMaxUpdated(null, null);
                                 var field = inputFields["turnRadiusTwiddleFactorMin"];
-                                field.currentValue = ActivePilot.turnRadiusTwiddleFactorMin;
+                                field.SetCurrentValue(ActivePilot.turnRadiusTwiddleFactorMin);
                             }
                             if (contextTipsEnabled)
                             {

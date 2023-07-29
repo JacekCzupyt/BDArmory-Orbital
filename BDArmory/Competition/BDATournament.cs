@@ -1813,11 +1813,20 @@ namespace BDArmory.Competition
             var fileName = Path.Combine(logsFolder, $"Tournament {tournamentID}", "team scores.log");
             var maxTeamNameLength = teamScores.Max(kvp => kvp.Key.Length);
             var lines = teamScores.Select((kvp, rank) => $"{rank + 1,3:D} - {kvp.Key} {new string(' ', maxTeamNameLength - kvp.Key.Length)}{kvp.Value,8:F3}").ToList();
-            lines.Insert(0, $"Tournament {tournamentID}, round {currentRound + 1} / {numberOfRounds}");
+            if (tournamentState.tournamentRoundType == TournamentRoundType.Ranked)
+                lines.Insert(0, $"Tournament {tournamentID}, round {currentRound} / {BDArmorySettings.TOURNAMENT_ROUNDS}");  // Round 0 is the initial shuffled round.
+            else
+                lines.Insert(0, $"Tournament {tournamentID}, round {currentRound + 1} / {numberOfRounds}"); // For non-ranked rounds, start counting at 1.
             File.WriteAllLines(fileName, lines);
         }
 
-        public Tuple<int, int, int, int> GetTournamentProgress() => new Tuple<int, int, int, int>(currentRound, numberOfRounds, currentHeat, numberOfHeats);
+        public Tuple<int, int, int, int> GetTournamentProgress()
+        {
+            if (tournamentState.tournamentRoundType == TournamentRoundType.Ranked)
+                return new Tuple<int, int, int, int>(currentRound, BDArmorySettings.TOURNAMENT_ROUNDS, currentHeat + 1, numberOfHeats); // Round 0 is the initial shuffled round.
+            else
+                return new Tuple<int, int, int, int>(currentRound + 1, numberOfRounds, currentHeat + 1, numberOfHeats); // For non-ranked rounds, start counting at 1.
+        }
 
         public void RecomputeScores() => tournamentState.scores.ComputeScores();
     }

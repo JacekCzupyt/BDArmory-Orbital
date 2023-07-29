@@ -453,8 +453,8 @@ namespace BDArmory.UI
                     if (Physics.Raycast(ray, out hit, 10000, (int)LayerMasks.Scenery))
                     {
                         BDArmorySettings.VESSEL_SPAWN_GEOCOORDS = FlightGlobals.currentMainBody.GetLatitudeAndLongitude(hit.point);
-                        spawnFields["lat"].currentValue = BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x;
-                        spawnFields["lon"].currentValue = BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y;
+                        spawnFields["lat"].SetCurrentValue(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x);
+                        spawnFields["lon"].SetCurrentValue(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y);
                     }
                 }
                 rects = SRight3Rects(line);
@@ -546,8 +546,8 @@ namespace BDArmory.UI
                             default:
                                 BDArmorySettings.VESSEL_SPAWN_GEOCOORDS = spawnLocation.location;
                                 BDArmorySettings.VESSEL_SPAWN_WORLDINDEX = spawnLocation.worldIndex;
-                                spawnFields["lat"].currentValue = BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x;
-                                spawnFields["lon"].currentValue = BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y;
+                                spawnFields["lat"].SetCurrentValue(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x);
+                                spawnFields["lon"].SetCurrentValue(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y);
                                 SpawnUtils.ShowSpawnPoint(selected_index, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE);
                                 break;
                         }

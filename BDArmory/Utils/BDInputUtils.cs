@@ -191,13 +191,17 @@ namespace BDArmory.Utils
         public double lastUpdated;
         public string possibleValue = string.Empty;
         private double _value;
-        public double currentValue
+        public double currentValue // Note: setting the current value doesn't necessarily update the displayed string. Use SetCurrentValue to force updating the displayed value.
         {
             get { return _value; }
-            set
+            private set
             {
                 _value = value;
-                if (string.IsNullOrEmpty(possibleValue)) possibleValue = _value.ToString("G6");
+                if (string.IsNullOrEmpty(possibleValue))
+                {
+                    possibleValue = _value.ToString("G6");
+                    valid = true;
+                }
             }
         }
         public double minValue;
@@ -205,6 +209,14 @@ namespace BDArmory.Utils
         private bool coroutineRunning = false;
         private Coroutine coroutine;
         public bool valid = true;
+
+        // Set the current value and force the display to update.
+        public void SetCurrentValue(double value)
+        {
+            possibleValue = null; // Clear the possibleValue first so that it gets updated.
+            currentValue = value;
+            lastUpdated = Time.time;
+        }
 
         public void tryParseValue(string v)
         {

@@ -1,4 +1,8 @@
-﻿v1.6.4.1
+﻿IMPROVEMENTS / FIXES
+- UI:
+	- Fix numeric input fields not updating when they should.
+
+v1.6.4.1
 IMPROVEMENTS / FIXES
 - UI:
 	- Add an option for disabling the self-updating of the text in numeric input fields.

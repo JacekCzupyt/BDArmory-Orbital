@@ -1116,11 +1116,11 @@ namespace BDArmory.UI
                             {
                                 var fieldInfo = typeof(MissileFire).GetField(field);
                                 if (fieldInfo != null)
-                                { textNumFields[field].currentValue = Convert.ToDouble(fieldInfo.GetValue(ActiveWeaponManager)); }
+                                { textNumFields[field].SetCurrentValue(Convert.ToDouble(fieldInfo.GetValue(ActiveWeaponManager))); }
                                 else // Check if it's a property instead of a field.
                                 {
                                     var propInfo = typeof(MissileFire).GetProperty(field);
-                                    textNumFields[field].currentValue = Convert.ToDouble(propInfo.GetValue(ActiveWeaponManager));
+                                    textNumFields[field].SetCurrentValue(Convert.ToDouble(propInfo.GetValue(ActiveWeaponManager)));
                                 }
                             }
                             catch (Exception e) { Debug.LogError($"[BDArmory.BDArmorySetup]: Failed to set current value of {field}: " + e.Message); }
