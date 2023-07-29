@@ -307,6 +307,7 @@ namespace BDArmory.FX
                 overlapSphereColliders = Physics.OverlapSphere(Position, blastRange, explosionLayerMask);
                 overlapSphereColliderCount = overlapSphereColliders.Length;
             }
+            var sourceVessel = ExplosivePart.GetComponent<BDExplosivePart>()?.sourcevessel;
             using (var hitCollidersEnu = overlapSphereColliders.Take(overlapSphereColliderCount).GetEnumerator())
             {
                 while (hitCollidersEnu.MoveNext())
@@ -318,7 +319,11 @@ namespace BDArmory.FX
                         if (partHit != null)
                         {
                             if (ProjectileUtils.IsIgnoredPart(partHit)) continue; // Ignore ignored parts.
-                            if (ExplosivePart != null && partHit.name == ExplosivePart.name) continue; //don't fratricide fellow missiles/bombs in a launched salvo when the first detonates
+                            if (ExplosivePart != null &&
+                                partHit.name == ExplosivePart.name &&
+                                sourceVessel != null &&
+                                sourceVessel == partHit.GetComponent<BDExplosivePart>()?.sourcevessel)
+                                continue; //don't fratricide fellow missiles/bombs in a launched salvo when the first detonates
                             if (partHit.mass > 0 && !explosionEventsPartsAdded.Contains(partHit))
                             {   
                                 var damaged = ProcessPartEvent(partHit, Vector3.Distance(hitCollidersEnu.Current.ClosestPoint(Position), Position), sourceVesselName, explosionEventsPreProcessing, explosionEventsPartsAdded);
