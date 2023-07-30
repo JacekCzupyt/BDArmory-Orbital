@@ -26,6 +26,7 @@ namespace BDArmory.CounterMeasure
 
         public CountermeasureTypes cmType = CountermeasureTypes.Flare;
         [KSPField] public string countermeasureType = "flare";
+        [KSPField] public bool worksInVacuum = true;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_EjectVelocity"),//Eject Velocity
         UI_FloatRange(controlEnabled = true, scene = UI_Scene.Editor, minValue = 1f, maxValue = 200f, stepIncrement = 1f)]
@@ -241,6 +242,7 @@ namespace BDArmory.CounterMeasure
             GameObject cm = flarePool.GetPooledObject();
             cm.transform.position = transform.position;
             CMFlare cmf = cm.GetComponent<CMFlare>();
+            cmf.worksInVacuum = worksInVacuum;
             cmf.velocity = part.rb.velocity
                 + BDKrakensbane.FrameVelocityV3f
                 + (ejectVelocity * transform.up)

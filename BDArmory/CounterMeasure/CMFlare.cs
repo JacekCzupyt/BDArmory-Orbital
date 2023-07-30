@@ -7,6 +7,7 @@ using BDArmory.FX;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
+using Random = UnityEngine.Random;
 
 namespace BDArmory.CounterMeasure
 {
@@ -27,6 +28,7 @@ namespace BDArmory.CounterMeasure
         public float thermal;
         float minThermal;
         float startThermal;
+        public bool worksInVacuum;
 
         float lifeTime = 5;
 
@@ -79,6 +81,7 @@ namespace BDArmory.CounterMeasure
                         if (pe.Current == null) continue;
                         {
                             EffectBehaviour.AddParticleEmitter(pe.Current);
+                            
                             pEmitters.Add(pe.Current);
                         }
                     }
@@ -128,10 +131,19 @@ namespace BDArmory.CounterMeasure
             {
                 transform.localRotation = Quaternion.LookRotation(velocity, upDirection);
             }
+            
+            Vector3 currPos = transform.position;
+            float atmDens = (float)FlightGlobals.getAtmDensity(
+                FlightGlobals.getStaticPressure(currPos),
+                FlightGlobals.getExternalTemperature(),
+                FlightGlobals.currentMainBody
+            );
 
             //Particle effects
             //downforce
-            Vector3 downForce = (Mathf.Clamp(velocity.magnitude, 0.1f, 150) / 150) * 20 * -upDirection;
+            Vector3 flareForce = atmDens == 0 ?
+                Random.insideUnitSphere * 5 :
+                (Mathf.Clamp(velocity.magnitude, 0.1f, 150) / 150) * 20 * -upDirection;
 
             //turbulence
             using (var pEmitter = pEmitters.GetEnumerator())
@@ -140,26 +152,24 @@ namespace BDArmory.CounterMeasure
                     if (pEmitter.Current == null) continue;
                     try
                     {
-                        pEmitter.Current.worldVelocity = 2 * ParticleTurbulence.flareTurbulence + downForce;
+                        pEmitter.Current.worldVelocity = 2 * ParticleTurbulence.flareTurbulence + flareForce;
                     }
                     catch (NullReferenceException e)
                     {
                         Debug.LogWarning("[BDArmory.CMFlare]: NRE setting worldVelocity: " + e.Message);
                     }
-
-                    try
-                    {
-                        if (FlightGlobals.ActiveVessel && FlightGlobals.ActiveVessel.atmDensity <= 0)
-                        {
-                            pEmitter.Current.emit = false;
-                        }
-                    }
-                    catch (NullReferenceException e)
-                    {
-                        Debug.LogWarning("[BDArmory.CMFlare]: NRE checking density: " + e.Message);
-                    }
+                    if (!worksInVacuum && atmDens == 0)
+                        pEmitter.Current.emit = false;
                 }
             //
+            if (atmDens == 0) {
+                pEmitters[0].useWorldSpace = false;
+                pEmitters[2].useWorldSpace = false;
+            }
+            else {
+                pEmitters[0].useWorldSpace = true;
+                pEmitters[2].useWorldSpace = true;
+            }
 
             //thermal decay
             thermal = Mathf.MoveTowards(thermal, minThermal,
@@ -194,14 +204,14 @@ namespace BDArmory.CounterMeasure
             //physics
             //atmospheric drag (stock)
             float simSpeedSquared = velocity.sqrMagnitude;
-            Vector3 currPos = transform.position;
             const float mass = 0.001f;
             const float drag = 1f;
-            Vector3 dragForce = (0.008f * mass) * drag * 0.5f * simSpeedSquared *
-                                (float)
-                                FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(currPos),
-                                    FlightGlobals.getExternalTemperature(), FlightGlobals.currentMainBody) *
-                                velocity.normalized;
+            Vector3 dragForce = (0.008f * mass) *
+                drag *
+                0.5f *
+                simSpeedSquared *
+                atmDens *
+                velocity.normalized;
 
             velocity -= (dragForce / mass) * Time.fixedDeltaTime;
             //
