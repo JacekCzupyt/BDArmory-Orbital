@@ -270,7 +270,7 @@ namespace BDArmory.CounterMeasure
 
             GameObject cm = chaffPool.GetPooledObject();
             CMChaff chaff = cm.GetComponent<CMChaff>();
-            chaff.Emit(ejectTransform.position, ejectVelocity * ejectTransform.forward);
+            chaff.Emit(ejectTransform.position, ejectVelocity * ejectTransform.forward + vessel.obt_velocity);
 
             FireParticleEffects();
             return true;

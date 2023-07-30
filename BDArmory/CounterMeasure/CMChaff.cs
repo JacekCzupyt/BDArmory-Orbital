@@ -11,7 +11,7 @@ namespace BDArmory.CounterMeasure
 
         const float drag = 5;
 
-        Vector3d geoPos;
+        Vector3d position;
         Vector3 velocity;
         CelestialBody body;
 
@@ -27,6 +27,7 @@ namespace BDArmory.CounterMeasure
             if (!pe)
             {
                 pe = gameObject.GetComponentInChildren<KSPParticleEmitter>();
+                pe.useWorldSpace = false;
                 EffectBehaviour.AddParticleEmitter(pe);
             }
 
@@ -47,25 +48,38 @@ namespace BDArmory.CounterMeasure
 
         IEnumerator LifeRoutine()
         {
-            geoPos = VectorUtils.WorldPositionToGeoCoords(transform.position, body);
-
+            position = transform.position; // Optimisation: avoid getting/setting transform.position more than necessary.
             pe.EmitParticle();
 
             float startTime = Time.time;
             var wait = new WaitForFixedUpdate();
-            Vector3 position; // Optimisation: avoid getting/setting transform.position more than necessary.
+
             while (Time.time - startTime < pe.maxEnergy)
             {
-                position = body.GetWorldSurfacePosition(geoPos.x, geoPos.y, geoPos.z);
                 velocity += FlightGlobals.getGeeForceAtPosition(position) * Time.fixedDeltaTime;
-                Vector3 dragForce = (0.008f) * drag * 0.5f * velocity.sqrMagnitude *
-                                    (float)
-                                    FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(position),
-                                        FlightGlobals.getExternalTemperature(), body) * velocity.normalized;
+                Vector3 surfVelocity = velocity - (Vector3)body.getRFrmVel(position);
+                Vector3 dragForce = (0.008f) *
+                    drag *
+                    0.5f *
+                    surfVelocity.sqrMagnitude *
+                    (float)
+                    FlightGlobals.getAtmDensity(
+                        FlightGlobals.getStaticPressure(position),
+                        FlightGlobals.getExternalTemperature(),
+                        body
+                    ) *
+                    surfVelocity.normalized;
                 velocity -= (dragForce) * Time.fixedDeltaTime;
-                position += velocity * Time.fixedDeltaTime;
+
+                if (body.GetAltitude(position) > 100000)
+                    position += velocity * Time.fixedDeltaTime;
+                else
+                    position += surfVelocity * Time.fixedDeltaTime;
+
+                if (BDKrakensbane.IsActive)
+                    position -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
+                
                 transform.position = position;
-                geoPos = VectorUtils.WorldPositionToGeoCoords(position, body);
                 yield return wait;
             }
 
