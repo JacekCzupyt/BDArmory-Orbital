@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using BDArmory.Extensions;
+using UnityEngine;
 
 namespace BDArmory.CounterMeasure
 {
@@ -9,6 +10,7 @@ namespace BDArmory.CounterMeasure
         const float chaffMax = 500;
         const float chaffSubtractor = 120;
         const float speedRegenMult = 0.6f;
+        const float accRegenMult = 5f;
         const float minRegen = 40;
         const float maxRegen = 500;
         const float minMult = 0.1f;
@@ -46,10 +48,13 @@ namespace BDArmory.CounterMeasure
             chaffScalar = Mathf.Clamp(chaffScalar - chaffSubtractor, 0, chaffMax);
         }
 
-        void FixedUpdate()
-        {
+        void FixedUpdate() {
+            double multiplier = vessel.InVacuum() ?
+                accRegenMult * (vessel.acceleration - vessel.graviticAcceleration).magnitude :
+                speedRegenMult * vessel.srfSpeed;
+            
             chaffScalar = Mathf.MoveTowards(chaffScalar, chaffMax,
-                Mathf.Clamp(speedRegenMult * (float)vessel.srfSpeed, minRegen, maxRegen) * Time.fixedDeltaTime);
+                Mathf.Clamp((float)multiplier, minRegen, maxRegen) * Time.fixedDeltaTime);
         }
     }
 }

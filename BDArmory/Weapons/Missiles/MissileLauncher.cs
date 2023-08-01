@@ -1677,7 +1677,7 @@ namespace BDArmory.Weapons.Missiles
                     }
                     else if (GuidanceMode == GuidanceModes.RCS)
                     {
-                        VacuumGuidance(atmosMultiplier);
+                        VacuumGuidance();
                     }
                     else if (GuidanceMode == GuidanceModes.Cruise)
                     {
@@ -1808,11 +1808,12 @@ namespace BDArmory.Weapons.Missiles
                             if (weaponClass == WeaponClasses.SLW)
                             {
                                 TargetPosition = radarTarget.predictedPosition;
+                                TargetVelocity = radarTarget.velocity;
+                                TargetAcceleration = radarTarget.acceleration;
                             }
-                            else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
-                            TargetVelocity = radarTarget.velocity;
-                            TargetAcceleration = radarTarget.acceleration;
+                            else {
+                                (TargetPosition, TargetVelocity, TargetAcceleration) = radarTarget.TargetDataWithChaffFactor(chaffEffectivity);
+                            }
                             targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(TargetPosition, vessel.mainBody);
 
                             if (weaponClass == WeaponClasses.SLW)
@@ -2474,14 +2475,17 @@ namespace BDArmory.Weapons.Missiles
 
         }
 
-        void VacuumGuidance(float atmo) {
-            Vector3? desiredAcceleration = null;
+        void VacuumGuidance() {
+            if (BDArmorySettings.DEBUG_LINES)
+                DrawDebugLine(radarTarget.position, TargetPosition, Color.green);
+            
+            Vector3? desiredAcceleration;
             float maxMissileAcceleration = (float)(thrust / vessel.totalMass);
             if (!TargetAcquired) {
                 desiredAcceleration = part.transform.forward * maxMissileAcceleration;
             }
             else {
-                (desiredAcceleration, var timeToTarget) = ComputeVacuumIntercept(
+                (desiredAcceleration, _) = ComputeVacuumIntercept(
                     TargetPosition - part.transform.position,
                     TargetVelocity - vessel.obt_velocity,
                     TargetAcceleration - vessel.graviticAcceleration,
@@ -2489,7 +2493,7 @@ namespace BDArmory.Weapons.Missiles
                 );
                 if (!desiredAcceleration.HasValue) {
                     // If no solution found, disregard target acceleration
-                    (desiredAcceleration, timeToTarget) = ComputeVacuumIntercept(
+                    (desiredAcceleration, _) = ComputeVacuumIntercept(
                         TargetPosition - part.transform.position,
                         TargetVelocity - vessel.obt_velocity,
                         Vector3.zero,
@@ -2500,13 +2504,14 @@ namespace BDArmory.Weapons.Missiles
             if (!desiredAcceleration.HasValue) throw new Exception("Desired acceleration not found");
 
             // Rotate missile
+            var partTransform = part.transform;
             part.transform.rotation = Quaternion.RotateTowards(
-                part.transform.rotation,
-                Quaternion.LookRotation(desiredAcceleration.Value, part.transform.up),
+                partTransform.rotation,
+                Quaternion.LookRotation(desiredAcceleration.Value, partTransform.up),
                 debugTurnRate * Time.fixedDeltaTime // TODO: improve turn rate logic
             );
 
-            Throttle = Vector3.Dot(part.transform.forward, desiredAcceleration.Value.normalized);
+            Throttle = Vector3.Dot(partTransform.forward, desiredAcceleration.Value.normalized);
 
             if (hasRCS) {
                 DoRCS(desiredAcceleration.Value * (float)vessel.totalMass);

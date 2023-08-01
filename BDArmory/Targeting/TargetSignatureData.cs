@@ -140,16 +140,18 @@ namespace BDArmory.Targeting
             }
         }
 
-        public Vector3 predictedPositionWithChaffFactor(float chaffEffectivity = 1f)
-        {
+        public (Vector3, Vector3, Vector3) TargetDataWithChaffFactor(float chaffEffectivity = 1f) {
             // get chaff factor of vessel and calculate decoy distortion caused by chaff echos
             float decoyFactor = 0f;
             Vector3 posDistortion = Vector3.zero;
+            Vector3 velDistortion = Vector3.zero;
+            Vector3 accDistortion = Vector3.zero;
 
             if (vessel != null)
             {
                 // chaff check
                 decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel));
+                Debug.Log($"[BDArmory.Chaff]: Target decoy factor: {decoyFactor}");
 
                 if (decoyFactor > 0f)
                 {
@@ -158,22 +160,67 @@ namespace BDArmory.Targeting
 
                     // Jamming biases position distortion further to rear, depending on ratio of jamming strength and radarModifiedSignature
                     float jammingFactor = vesseljammer is null ? 0 : decoyFactor * Mathf.Clamp01(vesseljammer.jammerStrength / 100f / Mathf.Max(targetInfo.radarModifiedSignature, 0.1f));
+                    
+                    float chaffFactor = Mathf.Max(BDArmorySettings.CHAFF_FACTOR, 0f);
 
-                    // Random radius of distortion, 16-256m
-                    float distortionFactor = decoyFactor * UnityEngine.Random.Range(16f, 256f);
+                    if (orbital) {
+                        const float distortionMaxDistance = 256f;
+                        // Semi-random vector, continuous with time, and its derivatives
+                        var (dp, dv, da) = WonderingVector(Time.fixedTime,BDArmorySettings.CHAFF_DISTORTION_SPEED);
+                        
+                        float distortionFactor = decoyFactor * chaffEffectivity * chaffFactor * distortionMaxDistance;
+                        
+                        posDistortion = dp * distortionFactor;
+                        velDistortion = dv * distortionFactor * jammingFactor;
+                        accDistortion = da * distortionFactor * jammingFactor * jammingFactor;
+                    }
+                    else {
+                        // Random radius of distortion, 16-256m
+                        float distortionFactor = decoyFactor * UnityEngine.Random.Range(16f, 256f);
+                        
+                        // Convert Float jammingFactor position bias and signatureFactor scaling to Vector3 position
+                        Vector3 signatureDistortion = distortionFactor *
+                            (vessel.GetSrfVelocity().normalized * -1f * jammingFactor + UnityEngine.Random.insideUnitSphere);
 
-                    // Convert Float jammingFactor position bias and signatureFactor scaling to Vector3 position
-                    Vector3 signatureDistortion = distortionFactor * (vessel.GetSrfVelocity().normalized * -1f * jammingFactor + UnityEngine.Random.insideUnitSphere);
+                        // Higher speed -> missile decoyed further "behind" where the chaff drops (also means that chaff is least effective for head-on engagements)
+                        posDistortion = (vessel.GetSrfVelocity() * -1f * Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f)) +
+                            signatureDistortion;
 
-                    // Higher speed -> missile decoyed further "behind" where the chaff drops (also means that chaff is least effective for head-on engagements)
-                    posDistortion = (vessel.GetSrfVelocity() * -1f * Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f)) + signatureDistortion;
-
-                    // Apply effects from global settings and individual missile chaffEffectivity
-                    posDistortion *= Mathf.Max(BDArmorySettings.CHAFF_FACTOR, 0f) * chaffEffectivity;
+                        // Apply effects from global settings and individual missile chaffEffectivity
+                        posDistortion *= chaffFactor * chaffEffectivity;
+                    }
                 }
             }
 
-            return position + (velocity * age) + posDistortion;
+            return (
+                position + (velocity * age) + (acceleration * age * age / 2) + posDistortion,
+                velocity + (acceleration * age) + velDistortion,
+                acceleration + accDistortion
+            );
+        }
+
+        (Vector3, Vector3, Vector3) WonderingVector(float t, float speed = 1f) {
+            var x = VectorUtils.FullPerlinNoiseWithDerivatives(
+                t * speed,
+                0,
+                Time.fixedDeltaTime * speed
+            );
+            
+            var y = VectorUtils.FullPerlinNoiseWithDerivatives(
+                t * speed,
+                50,
+                Time.fixedDeltaTime * speed
+            );
+            
+            var z = VectorUtils.FullPerlinNoiseWithDerivatives(
+                t * speed,
+                100,
+                Time.fixedDeltaTime * speed
+            );
+
+            return (new Vector3(x.Item1, y.Item1, z.Item1),
+                new Vector3(x.Item2, y.Item2, z.Item2) * speed,
+                new Vector3(x.Item3, y.Item3, z.Item3) * speed);
         }
 
         public float altitude

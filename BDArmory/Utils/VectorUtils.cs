@@ -78,6 +78,14 @@ namespace BDArmory.Utils
             return perlin;
         }
 
+        public static (float, float, float) FullPerlinNoiseWithDerivatives(float x, float y, float dx) {
+            float p0 = FullRangePerlinNoise(x - dx, y);
+            float p1 = FullRangePerlinNoise(x, y);
+            float p2 = FullRangePerlinNoise(x + dx, y);
+
+            return (p1, (p2 - p0) / (2 * dx), (p2 + p0 - 2 * p1) / dx);
+        }
+
         public static Vector3 RandomDirectionDeviation(Vector3 direction, float maxAngle)
         {
             return Vector3.RotateTowards(direction, UnityEngine.Random.rotation * direction, UnityEngine.Random.Range(0, maxAngle * Mathf.Deg2Rad), 0).normalized;

@@ -811,11 +811,13 @@ namespace BDArmory.Weapons.Missiles
                             if (weaponClass == WeaponClasses.SLW)
                             {
                                 TargetPosition = radarTarget.predictedPosition;
+                                TargetVelocity = radarTarget.velocity;
+                                TargetAcceleration = radarTarget.acceleration;
                             }
-                            else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
-                            TargetVelocity = radarTarget.velocity;
-                            TargetAcceleration = radarTarget.acceleration;
+                            else {
+                                (TargetPosition, TargetVelocity, TargetAcceleration) = radarTarget.TargetDataWithChaffFactor(chaffEffectivity);
+                            }
+
                             _radarFailTimer = 0;
                             return;
                         }
@@ -841,11 +843,12 @@ namespace BDArmory.Weapons.Missiles
                                 if (weaponClass == WeaponClasses.SLW)
                                 {
                                     TargetPosition = radarTarget.predictedPosition;
+                                    TargetVelocity = radarTarget.velocity;
+                                    TargetAcceleration = radarTarget.acceleration;
                                 }
-                                else
-                                    TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
-                                TargetVelocity = radarTarget.velocity;
-                                TargetAcceleration = Vector3.zero;
+                                else {
+                                    (TargetPosition, TargetVelocity, TargetAcceleration) = radarTarget.TargetDataWithChaffFactor(chaffEffectivity);
+                                }
                                 TargetAcquired = true;
                             }
                         }
@@ -909,12 +912,12 @@ namespace BDArmory.Weapons.Missiles
                                         if (weaponClass == WeaponClasses.SLW)
                                         {
                                             TargetPosition = radarTarget.predictedPosition;
+                                            TargetVelocity = radarTarget.velocity;
+                                            TargetAcceleration = radarTarget.acceleration;
                                         }
-                                        else
-                                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
-
-                                        TargetVelocity = radarTarget.velocity;
-                                        TargetAcceleration = radarTarget.acceleration;
+                                        else {
+                                            (TargetPosition, TargetVelocity, TargetAcceleration) = radarTarget.TargetDataWithChaffFactor(chaffEffectivity);
+                                        }
                                         _radarFailTimer = 0;
                                         if (!ActiveRadar && Time.time - TimeFired > 1)
                                         {
@@ -948,15 +951,14 @@ namespace BDArmory.Weapons.Missiles
                         {
                             radarLOALSearching = true;
                             TargetAcquired = true;
-                            if (weaponClass == WeaponClasses.SLW)
-                            {
-                                TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
+                            if (weaponClass == WeaponClasses.SLW) {
+                                TargetPosition = radarTarget.predictedPosition;
+                                TargetVelocity = radarTarget.velocity;
+                                TargetAcceleration = radarTarget.acceleration;
                             }
-                            else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
-
-                            TargetVelocity = radarTarget.velocity;
-                            TargetAcceleration = Vector3.zero;
+                            else {
+                                (TargetPosition, TargetVelocity, TargetAcceleration) = radarTarget.TargetDataWithChaffFactor(chaffEffectivity);
+                            }
                             ActiveRadar = false;
                             _radarFailTimer = 0;
                         }
@@ -1028,12 +1030,13 @@ namespace BDArmory.Weapons.Missiles
                     radarLOALSearching = false;
                     if (weaponClass == WeaponClasses.SLW)
                     {
-                        TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
+                        TargetPosition = radarTarget.predictedPosition;
+                        TargetVelocity = radarTarget.velocity;
+                        TargetAcceleration = radarTarget.acceleration;
                     }
-                    else
-                        TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
-                    TargetVelocity = radarTarget.velocity;
-                    TargetAcceleration = radarTarget.acceleration;
+                    else {
+                        (TargetPosition, TargetVelocity, TargetAcceleration) = radarTarget.TargetDataWithChaffFactor(chaffEffectivity);
+                    }
 
                     if (!ActiveRadar && Time.time - TimeFired > 1)
                     {
