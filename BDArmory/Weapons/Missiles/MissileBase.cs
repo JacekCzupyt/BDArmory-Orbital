@@ -1213,7 +1213,9 @@ namespace BDArmory.Weapons.Missiles
             var targetDistancePerFrame = TargetVelocity * Time.fixedDeltaTime;
             var missileDistancePerFrame = vessel.Velocity() * Time.fixedDeltaTime;
 
-            var futureTargetPosition = (TargetPosition + targetDistancePerFrame);
+            var currentTargetPosition = (TargetPosition + targetDistancePerFrame);
+            var futureTargetPosition = (currentTargetPosition + targetDistancePerFrame);
+
             var futureMissilePosition = (vessel.CoM + missileDistancePerFrame);
 
             var relativeSpeed = (TargetVelocity - vessel.Velocity()).magnitude * Time.fixedDeltaTime;
@@ -1288,105 +1290,90 @@ namespace BDArmory.Weapons.Missiles
                 case DetonationDistanceStates.CheckingProximity:
                     {
                         if (!TargetAcquired) return;
-                        if (DetonationDistance == 0)
-                        {
-                            if (weaponClass == WeaponClasses.Bomb) return;
 
-                            if (TimeIndex > 1f)
-                            {
-                                Ray rayFuturePosition = new Ray(vessel.CoM, futureMissilePosition);
-                                var dist = (float)missileDistancePerFrame.magnitude;
-                                var hitCount = Physics.RaycastNonAlloc(rayFuturePosition, proximityHits, dist, layerMask);
-                                if (hitCount == proximityHits.Length) // If there's a whole bunch of stuff in the way (unlikely), then we need to increase the size of our hits buffer.
-                                {
-                                    proximityHits = Physics.RaycastAll(rayFuturePosition, dist, layerMask);
-                                    hitCount = proximityHits.Length;
-                                }
-                                if (hitCount > 0)
-                                {
-                                    Array.Sort<RaycastHit>(proximityHits, 0, hitCount, RaycastHitComparer.raycastHitComparer);
+                        Vector3? detonationPosition = null;
+                        float detonationDist = float.PositiveInfinity;
 
-                                    using (var hitsEnu = proximityHits.Take(hitCount).GetEnumerator())
-                                    {
-                                        while (hitsEnu.MoveNext())
-                                        {
-                                            RaycastHit hit = hitsEnu.Current;
+                        // if (weaponClass == WeaponClasses.Bomb) return; TODO: why?
 
-                                            try
-                                            {
-                                                var hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
-                                                if (hitPart == null) continue;
-                                                if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
+                        // Get closest point to perceived target during frame
+                        var closestPointDist = Mathf.Min(
+                            Vector3.Dot(
+                                currentTargetPosition - vessel.CoM,
+                                (missileDistancePerFrame - targetDistancePerFrame).normalized
+                            ),
+                            (float)(missileDistancePerFrame - targetDistancePerFrame).magnitude
+                        );
+                        var closestPoint = vessel.CoM + (missileDistancePerFrame - targetDistancePerFrame).normalized * closestPointDist;
 
-                                                if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel)
-                                                {
-                                                    //We found a hit to other vessel
-                                                    vessel.SetPosition(hit.point - 0.5f * missileDistancePerFrame.normalized);
-                                                    DetonationDistanceState = DetonationDistanceStates.Detonate;
-                                                    Detonate();
-                                                    return;
-                                                }
+                        // Detonate if sufficiently close
+                        if ((currentTargetPosition - closestPoint).magnitude < DetonationDistance) {
+                            detonationPosition = closestPoint;
+                            detonationDist = closestPointDist;
+                            DetonationDistanceState = DetonationDistanceStates.Detonate;
+                        }
+                        
+                        // Check for impacts
+                        if (TimeIndex > 1f) {
+                            // Ray from current missile position to next fixed frame position relative to target
+                            // TODO: targetDistancePerFrame can be effected by countermeasures, it should be replaced with the true target velocity
+                            Ray rayFuturePosRelativeTarget = new Ray(vessel.CoM, futureMissilePosition - targetDistancePerFrame);
+                            var dist = (float)(missileDistancePerFrame - targetDistancePerFrame).magnitude;
+                            
+                            // Raycast follows velocity relative to target.
+                            // This enables functionality in high velocity environments, such as in orbit.
+                            // Note that this may miss a third-party object moving at high relative speed, however such a situation is very unlikely.
+                            var hitCount = Physics.RaycastNonAlloc(rayFuturePosRelativeTarget, proximityHits, dist, layerMask);
+                            if (hitCount == proximityHits.Length)  
+                            { // If there's a whole bunch of stuff in the way (unlikely), then we need to increase the size of our hits buffer.
+                                proximityHits = Physics.RaycastAll(rayFuturePosRelativeTarget, dist, layerMask);
+                                hitCount = proximityHits.Length;
+                            }
+                            if (hitCount > 0) {
+                                Array.Sort<RaycastHit>(proximityHits, 0, hitCount, RaycastHitComparer.raycastHitComparer);
+
+                                using (var hitsEnu = proximityHits.Take(hitCount).GetEnumerator()) {
+                                    while (hitsEnu.MoveNext()) {
+                                        RaycastHit hit = hitsEnu.Current;
+
+                                        // If proximity detonation would have already occured 
+                                        if (DetonationDistanceState == DetonationDistanceStates.Detonate && hit.distance > detonationDist)
+                                            break;
+
+                                        try {
+                                            var hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
+                                            if (hitPart == null) continue;
+                                            if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
+
+                                            if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel) {
+                                                //We found a hit to other vessel
+                                                // vessel.SetPosition(hit.point - 0.5f * missileDistancePerFrame.normalized);
+                                                detonationPosition = hit.point - 0.5f * missileDistancePerFrame.normalized;
+                                                DetonationDistanceState = DetonationDistanceStates.Detonate;
+                                                break;
                                             }
-                                            catch (Exception e)
-                                            {
-                                                // ignored
-                                                Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonatationState: " + e.Message + "\n" + e.StackTrace);
-                                            }
+                                        }
+                                        catch (Exception e) {
+                                            // ignored
+                                            Debug.LogWarning(
+                                                "[BDArmory.MissileBase]: Exception thrown in CheckDetonatationState: " +
+                                                e.Message +
+                                                "\n" +
+                                                e.StackTrace
+                                            );
                                         }
                                     }
                                 }
                             }
                         }
-                        else
-                        {
-                            float optimalDistance = (float)(Math.Max(DetonationDistance, relativeSpeed));
-                            Vector3 targetPoint = (warheadType == WarheadTypes.ContinuousRod ? vessel.CoM - VectorUtils.GetUpDirection(TargetPosition) * (GetBlastRadius() > 0 ? (DetonationDistance / 3) : 5) : vessel.CoM);
-                            var hitCount = Physics.OverlapSphereNonAlloc(targetPoint, optimalDistance, proximityHitColliders, layerMask);
-                            if (hitCount == proximityHitColliders.Length)
-                            {
-                                proximityHitColliders = Physics.OverlapSphere(targetPoint, optimalDistance, layerMask);
-                                hitCount = proximityHitColliders.Length;
-                            }
-                            using (var hitsEnu = proximityHitColliders.Take(hitCount).GetEnumerator())
-                            {
-                                while (hitsEnu.MoveNext())
-                                {
-                                    if (hitsEnu.Current == null) continue;
 
-                                    try
-                                    {
-                                        Part partHit = hitsEnu.Current.GetComponentInParent<Part>();
-
-                                        if (partHit == null) continue;
-                                        if (ProjectileUtils.IsIgnoredPart(partHit)) continue; // Ignore ignored parts.
-                                        if (partHit.vessel == vessel || partHit.vessel == SourceVessel) continue; // Ignore source vessel
-                                        if (partHit.IsMissile() && partHit.GetComponent<MissileBase>().SourceVessel == SourceVessel) continue; // Ignore other missiles fired by same vessel
-                                        if (partHit.vessel.vesselType == VesselType.Debris) continue; // Ignore debris
-
-                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Missile proximity sphere hit | Distance overlap = " + optimalDistance + "| Part name = " + partHit.name);
-
-                                        //We found a hit a different vessel than ours
-                                        if (DetonateAtMinimumDistance)
-                                        {
-                                            var distanceSqr = (partHit.transform.position - vessel.CoM).sqrMagnitude;
-                                            var predictedDistanceSqr = (AIUtils.PredictPosition(partHit.transform.position, partHit.vessel.Velocity(), partHit.vessel.acceleration, Time.deltaTime) - AIUtils.PredictPosition(vessel, Time.deltaTime)).sqrMagnitude;
-
-                                            //float missileDistFrame = Time.fixedDeltaTime * (float)vessel.srfSpeed; vessel.Velocity() * Time.fixedDeltaTime
-
-                                            if (distanceSqr > predictedDistanceSqr && distanceSqr > relativeSpeed * relativeSpeed) // If we're closing and not going to hit within the next update, then wait.
-                                                return;
-                                        }
-                                        DetonationDistanceState = DetonationDistanceStates.Detonate;
-                                        return;
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        // ignored
-                                        Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonatationState: " + e.Message + "\n" + e.StackTrace);
-                                    }
-                                }
-                            }
+                        if (DetonationDistanceState == DetonationDistanceStates.Detonate) {
+                            System.Diagnostics.Debug.Assert(detonationPosition != null, nameof(detonationPosition) + " != null");
+                            vessel.SetPosition(detonationPosition.Value);
+                            Detonate();
+                            return;
                         }
+                        
                         break;
                     }
             }
