@@ -664,6 +664,7 @@
     <Content Include="Distribution\GameData\BDArmory\Agencies\BDA.png" />
     <Content Include="Distribution\GameData\BDArmory\BulletDefs\Inventory.txt" />
     <Content Include="Distribution\GameData\BDArmory\ChangeLog.txt" />
+    <Content Include="Distribution\GameData\BDArmory\ChangeLogOrbital.md" />
     <Content Include="Distribution\GameData\BDArmory\Credits.txt" />
     <Content Include="Distribution\GameData\BDArmory\FX\ColorFlareSM.png" />
     <Content Include="Distribution\GameData\BDArmory\FX\flameD.png" />
