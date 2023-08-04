@@ -1,6 +1,24 @@
 ﻿IMPROVEMENTS / FIXES
 - UI:
 	- Fix numeric input fields not updating when they should.
+	- New Team Icons toolbar icon for easier identification.
+- AI:
+	- Add a toggle to the pilot AI to disable ramming ground targets.
+- Armor:
+	- Allow changing the unclamped min/max dimensions for proc armor in the settings.cfg (PROC_ARMOR_ALT_LIMITS).
+- Weapons:
+	- Missiles:
+		- Allow missiles to be fired from their full Dynamic launch range isntead of static launch range.
+		- Fix missiles with a reload module launching incorrectly.
+		- Add trigger range setting for cluster missile submunition launch.
+		- Fix MultiMissilelaunchers resetting detonation Distance.
+		- Fix MML "TNT Mass Equivalent = -0.0018726" PAW label.
+		- Fixed Missiles with ModuleMissileRearm improperly launching.
+		- Fixed MMLs resetting detonation distance.
+		- Missile/bomb fratricide prevention now also checks the source vessel name to allow explosives to be destroyed by explosives of the same type from another vessel.
+- Competition:
+	- Adjust round progress strings in tournaments: ranked => 0→N, shuffled => 1→N.
+	- Report total number of rounds for ranked tournaments properly.
 
 v1.6.4.1
 IMPROVEMENTS / FIXES

@@ -2254,15 +2254,17 @@ namespace BDArmory.UI
                                 GUIContent.none, BDArmorySetup.BDGuiSkin.box);
                             ramLines += 0.25f;
 
-                            GUI.Label(SettinglabelRect(leftIndent, ramLines), StringUtils.Localize("#LOC_BDArmory_PilotAI_Ramming"), BoldLabel);//"Speed"
-                            ramLines++;
+                            GUI.Label(SettinglabelRect(leftIndent, ramLines), StringUtils.Localize("#LOC_BDArmory_PilotAI_Ramming"), BoldLabel);//"Ramming"
 
-                            ActivePilot.allowRamming = GUI.Toggle(ToggleButtonRect(leftIndent, ramLines, contentWidth),
-                            ActivePilot.allowRamming, StringUtils.Localize("#LOC_BDArmory_AllowRamming"), ActivePilot.allowRamming ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Dynamic pid"
-                            ramLines += 1.25f;
+                            ActivePilot.allowRamming = GUI.Toggle(ToggleButtonRect(leftIndent, ++ramLines, contentWidth),
+                            ActivePilot.allowRamming, StringUtils.Localize("#LOC_BDArmory_AllowRamming"), ActivePilot.allowRamming ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Allow Ramming"
 
                             if (ActivePilot.allowRamming)
                             {
+                                ActivePilot.allowRammingGroundTargets = GUI.Toggle(ToggleButtonRect(leftIndent, ++ramLines, contentWidth),
+                                ActivePilot.allowRammingGroundTargets, StringUtils.Localize("#LOC_BDArmory_AllowRammingGroundTargets"), ActivePilot.allowRammingGroundTargets ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Include Ground Targets"
+
+                                ramLines += 1.25f;
                                 if (!NumFieldsEnabled)
                                 {
                                     ActivePilot.controlSurfaceLag =
@@ -2278,13 +2280,12 @@ namespace BDArmory.UI
                                 }
                                 GUI.Label(SettinglabelRect(leftIndent, ramLines), StringUtils.Localize("#LOC_BDArmory_AIWindow_ControlSurfaceLag") + ": " + ActivePilot.controlSurfaceLag.ToString("0.00"), Label);
 
-                                ramLines++;
                                 if (contextTipsEnabled)
                                 {
-                                    GUI.Label(ContextLabelRect(leftIndent, ramLines), StringUtils.Localize("#LOC_BDArmory_AIWindow_ramLag"), contextLabel);
-                                    ramLines++;
+                                    GUI.Label(ContextLabelRect(leftIndent, ++ramLines), StringUtils.Localize("#LOC_BDArmory_AIWindow_ramLag"), contextLabel);
                                 }
                             }
+                            ramLines += 1.25f;
                             GUI.EndGroup();
                             rammingHeight = Mathf.Lerp(rammingHeight, ramLines, 0.15f);
                             ramLines += 0.1f;

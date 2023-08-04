@@ -150,6 +150,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float MAX_SAS_TORQUE = 30;                   //Clamp vessel total non-cockpit torque to this
         [BDAPersistentSettingsField] public static bool NUMERIC_INPUT_SELF_UPDATE = true;             // Automatically update the display string in NumericInputField after attempting to parse the value.
         [BDAPersistentSettingsField] public static float NUMERIC_INPUT_DELAY = 0.5f;                  // Time before last input for "read and interpret" logic of NumericInputField.
+        [BDAPersistentSettingsField] public static Vector2 PROC_ARMOR_ALT_LIMITS = new Vector2(0.01f, 100f); // Unclamped limits of proc armour panels.
         #endregion
 
         #region Physics constants

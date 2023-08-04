@@ -1081,7 +1081,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (_radarFailTimer < radarTimeout)
                 {
-                    if (vrd)
+                    if (vrd && vrd.locked)
                         radarTarget = vrd.lockedTargetData.targetData;
                     else if (radarLOAL)
                         radarLOALSearching = true;

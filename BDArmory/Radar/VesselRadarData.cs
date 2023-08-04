@@ -1812,7 +1812,7 @@ namespace BDArmory.Radar
             var vesselIndex = displayedTargets.FindIndex(t => t.vessel == vessel);
             if (vesselIndex != -1)
             {
-                activeLockedTargetIndex = vesselIndex;
+                activeLockedTargetIndex = lockedTargetIndexes.IndexOf(vesselIndex);
                 UpdateLockedTargets();
                 return true;
             }

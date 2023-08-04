@@ -872,6 +872,7 @@ namespace BDArmory.UI
                 }
                 BDAPersistentSettingsField.Load();
                 BDInputSettingsFields.LoadSettings();
+                SanitiseSettings();
                 BDArmorySettings.ready = true;
             }
             catch (NullReferenceException e)
@@ -901,6 +902,11 @@ namespace BDArmory.UI
             }
         }
 
+        static void SanitiseSettings()
+        {
+            BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y = Mathf.Min(BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y, 1e5f); // Anything over this pretty much breaks KSP.
+            BDArmorySettings.PROC_ARMOR_ALT_LIMITS.x = Mathf.Clamp(BDArmorySettings.PROC_ARMOR_ALT_LIMITS.x, BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y * 1e-8f, BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y); // More than 8 orders of magnitude breaks the mesh collider engine.
+        }
         #region GUI
 
         void OnGUI()
@@ -2518,6 +2524,13 @@ namespace BDArmory.UI
                         //     PROF_n = Mathf.RoundToInt(Mathf.Pow(10, PROF_n_pow));
                         // }
 
+                        // if (GUI.Button(SLineRect(++line), "Vessel Naming"))
+                        // {
+                        //     var v = FlightGlobals.ActiveVessel;
+                        //     Debug.Log($"DEBUG vesselName: {v.vesselName}, GetName: {v.GetName()}, GetDisplayName: {v.GetDisplayName()}");
+                        // }
+                        // if (GUI.Button(SLineRect(++line), "Test rand performance"))
+                        //     TestNamePerformance();
                         // if (GUI.Button(SLineRect(++line), "Test rand performance"))
                         //     TestRandPerformance();
                         // if (GUI.Button(SLineRect(++line), "Test ProjectOnPlane and PredictPosition"))
@@ -4337,6 +4350,21 @@ namespace BDArmory.UI
                 clip = SoundUtils.GetAudioClip("BDArmory/Sounds/deployClick");
             dt = Time.realtimeSinceStartup - tic;
             Debug.Log($"DEBUG GetAudioClip took {dt / N:G3}s");
+        }
+
+        public static void TestNamePerformance()
+        {
+            var watch = new System.Diagnostics.Stopwatch();
+            float µsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+            Debug.Log($"DEBUG Clock resolution: {µsResolution}µs, {PROF_N} outer loops, {PROF_n} inner loops");
+            var v = FlightGlobals.ActiveVessel;
+            string vesselName, getName, getDisplayName;
+            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { vesselName = v.vesselName; } };
+            Debug.Log($"DEBUG vesselName took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs to give {v.vesselName}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { getName = v.GetName(); } };
+            Debug.Log($"DEBUG GetName took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs to give {v.GetName()}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { getDisplayName = v.GetDisplayName(); } };
+            Debug.Log($"DEBUG GetDisplayName took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs to give {v.GetDisplayName()}");
         }
 
         public static void TestRandPerformance()

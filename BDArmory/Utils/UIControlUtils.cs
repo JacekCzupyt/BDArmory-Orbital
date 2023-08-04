@@ -321,8 +321,9 @@ namespace BDArmory.Utils
         /// <param name="sigFig"></param>
         public void UpdateLimits(float minValue, float maxValue, int sigFig = 0)
         {
-            this.minValue = minValue;
-            this.maxValue = maxValue;
+            // Sanitise input.
+            this.minValue = Mathf.Min(minValue, maxValue);
+            this.maxValue = Mathf.Max(minValue, maxValue);
             if (sigFig > 0) this.sigFig = sigFig;
             var partActionFieldItem = ((UIPartActionFloatSemiLogRange)this.partActionItem);
             if (partActionFieldItem != null) partActionFieldItem.UpdateLimits();

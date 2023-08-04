@@ -109,6 +109,11 @@ namespace BDArmory.CounterMeasure
 
         public void UpdateJammerStrength()
         {
+            if (jammers is null && !Setup())
+            {
+                Destroy(this);
+                return;
+            }
             jEnabled = jammers.Count > 0;
 
             if (!jammerEnabled)

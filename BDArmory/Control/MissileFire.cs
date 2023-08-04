@@ -4192,7 +4192,7 @@ namespace BDArmory.Control
                 }
                 else if (!BDArmorySettings.DISABLE_RAMMING)
                 {
-                    if (!HasWeaponsAndAmmo() && pilotAI != null && pilotAI.allowRamming)
+                    if (!HasWeaponsAndAmmo() && pilotAI != null && pilotAI.allowRamming && !(!pilotAI.allowRammingGroundTargets && potentialTarget.Vessel.LandedOrSplashed))
                     {
                         if (BDArmorySettings.DEBUG_AI)
                         {
@@ -5751,7 +5751,8 @@ namespace BDArmory.Control
             //take target vel into account? //if you're going 250m/s, that's only an extra 500m to the maxRange; if the enemy is closing towards you at 250m/s, that's 250m addition
             //Max 1.5x engagement, or engagementRange + vel*4?
             //min 2x engagement, or engagement + 2000m?
-            if (distanceToTarget > (Mathf.Min(engageableWeapon.GetEngagementRangeMax() * 2, engageableWeapon.GetEngagementRangeMax() + Mathf.Max(1000, (float)vessel.speed * 2)))) return false; //have AI preemptively begin to lead 2s out from max weapon range
+            if (weaponCandidate.GetWeaponClass() != WeaponClasses.Missile) 
+                if (distanceToTarget > (Mathf.Min(engageableWeapon.GetEngagementRangeMax() * 2, engageableWeapon.GetEngagementRangeMax() + Mathf.Max(1000, (float)vessel.speed * 2)))) return false; //have AI preemptively begin to lead 2s out from max weapon range
             switch (weaponCandidate.GetWeaponClass())
             {
                 case WeaponClasses.DefenseLaser:

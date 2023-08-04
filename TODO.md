@@ -3,6 +3,7 @@
 - Auto-tuning with numeric input fields enabled in the AI GUI won't let the values change
 - Changing the slider resolution sometimes triggers clamping of unclamped values
 - HP of asteroids in the SPH is wrong.
+- Taking off with the global 'P' button for two VTOL craft on the runway disables their engines!
 
 
 ### TODO (smaller items and specific requests / higher priority)
@@ -44,6 +45,7 @@
 - Fix the piñata spawning logic - spawn the piñata(s) separately after circular spawning has occured.
 - Add NPC and piñata support for single competitions as well (currently they're only supported in tournaments)
 	- Add "role" option in the VM for specifying PC, NPC, piñata, etc.
+- Tournament support for custom spawn templates.
 - Add VTOL AI to the AI GUI.
 - Motherships branch
 - Figure out why bullet hole decals are frequently offset behind the craft. - krakensbane or flightintegrator at time of decal attachment?

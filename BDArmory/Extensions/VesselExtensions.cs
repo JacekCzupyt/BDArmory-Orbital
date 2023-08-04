@@ -122,6 +122,9 @@ namespace BDArmory.Extensions
             }
         }
 
+#if DEBUG
+        static HashSet<string> badBoundsReported = new HashSet<string>(); // Only report vessels with bad bounds once.
+#endif
         /// <summary>
         /// Get a vessel's bounds.
         /// </summary>
@@ -160,8 +163,12 @@ namespace BDArmory.Extensions
                 size = max - min; //x: Width, y: Length, z: Height
             }
 #if DEBUG
-            var GetBoundString = (Part p) => { var bwop = GetRendererPartBounds(p); return $"{bwop.size}@{bwop.center}"; };
-            if (size.x > 1000 || size.y > 1000 || size.z > 1000) Debug.LogWarning($"DEBUG Bounds on {vessel.vesselName} are bad: {size} (max: {max}, min: {min}, useBounds: {useBounds}). Parts: {string.Join("; ", vessel.Parts.Select(p => $"{p.name}, collider bounds: {string.Join(", ", p.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}, bounds w/o particles: {GetBoundString(p)}"))}. Root: {vessel.rootPart.name}, bounds {string.Join(", ", vessel.rootPart.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}.");
+            if (!badBoundsReported.Contains(vessel.vesselName))
+            {
+                var GetBoundString = (Part p) => { var bwop = GetRendererPartBounds(p); return $"{bwop.size}@{bwop.center}"; };
+                if (size.x > 1000 || size.y > 1000 || size.z > 1000) Debug.LogWarning($"[BDArmory.VesselExtensions]: Bounds on {vessel.vesselName} are bad: {size} (max: {max}, min: {min}, useBounds: {useBounds}). Parts: {string.Join("; ", vessel.Parts.Select(p => $"{p.name}, collider bounds: {string.Join(", ", p.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}, bounds w/o particles: {GetBoundString(p)}"))}. Root: {vessel.rootPart.name}, bounds {string.Join(", ", vessel.rootPart.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}.");
+                badBoundsReported.Add(vessel.vesselName);
+            }
 #endif
             vessel.SetRotation(vesselRot);
             return size;
