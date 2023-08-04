@@ -65,15 +65,14 @@
       <HintPath>..\..\_LocalDev\KSPRefs\KSPAssets.dll</HintPath>
     </Reference>
     <Reference Include="MathNet.Numerics">
-      <HintPath>..\..\_LocalDev\Imports\MathNet.Numerics.dll</HintPath>
+      <HintPath>Libraries\MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics">
-      <HintPath>..\..\_LocalDev\Imports\System.Numerics.dll</HintPath>
+      <HintPath>Libraries\System.Numerics.dll</HintPath>
     </Reference>
-    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\_LocalDev\KSPRefs\UnityEngine.dll</HintPath>
@@ -621,6 +620,7 @@
     <None Include="Distribution\GameData\BDArmory\Parts\MK1OpenCockpit\weaponizedcommandseat.cfg" />
     <None Include="Distribution\GameData\BDArmory\Parts\weaponManager\model.mu" />
     <None Include="Distribution\GameData\BDArmory\Parts\weaponManager\weaponManager.cfg" />
+    <None Include="Distribution\GameData\BDArmory\Parts\TestPdc1\TestPdc1.cfg" />
     <None Include="Distribution\GameData\BDArmory\Resources\Armor.cfg" />
     <None Include="Distribution\GameData\BDArmory\Resources\BDAmmo_Universal.cfg" />
     <None Include="Distribution\GameData\BDArmory\Resources\Countermeasures.cfg" />
@@ -860,6 +860,7 @@
     <Content Include="Distribution\GameData\BDArmory\Textures\settingsIcon.png" />
     <Content Include="Distribution\GameData\BDArmory\Textures\targetDirectionIndicator.png" />
     <Content Include="Distribution\GameData\BDArmory\Textures\whiteSquare.png" />
+    <Content Include="Libraries\System.Numerics.dll" />
   </ItemGroup>
   <PropertyGroup>
     <PostBuildEvent Condition="'$(OS)' == 'Windows_NT' ">
@@ -878,10 +879,8 @@
       del "$(ProjectDir)Distribution/GameData/${ModName}/Plugins/"BDArmory*
       xcopy /E /Y "$(TargetDir)"BDArmory*.dll "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
       xcopy /E /Y "$(TargetDir)"BDArmory*.pdb "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
-
-      set IMPORTS_DIR=%GIT_PATH%_LocalDev\Imports
-      @echo %IMPORTS_DIR%
-      xcopy /E /Y "%IMPORTS_DIR%\*" "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
+      
+      xcopy /E /Y "$(ProjectDir)Libraries\*" "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
 
       if $(ConfigurationName) == Debug (
         @echo building debug files and symbols...
@@ -947,10 +946,8 @@
         @echo building debug files and symbols...
         copy /Y "$(TargetDir)"BDArmory*.pdb "$(ProjectDir)Distribution\GameData\%ModName%\Plugins\"
       )
-
-      set IMPORTS_DIR=%GIT_PATH%_LocalDev\Imports
-      @echo %IMPORTS_DIR%
-      xcopy /E /Y "%IMPORTS_DIR%\*" "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
+      
+      xcopy /E /Y "$(ProjectDir)Libraries\*" "$(ProjectDir)Distribution\GameData\%25ModName%25\Plugins\"
       
       set KSP_DIR=%GIT_PATH%Kerbal Space Program
       @echo %KSP_DIR%
