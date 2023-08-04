@@ -61,7 +61,7 @@ namespace BDArmory.Guidances
 
         public GuidanceState GuidanceState { get; set; }
 
-        public Vector3 GetDirection(MissileBase missile, Vector3 targetPosition, Vector3 targetVelocity)
+        public Vector3 GetDirection(MissileBase missile, Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration = default)
         {
             //set up
             if (_missile.TimeIndex < 1)

@@ -225,6 +225,7 @@
     <Compile Include="Guidances\CruiseGuidance.cs" />
     <Compile Include="Guidances\IGuidance.cs" />
     <Compile Include="Guidances\MissileGuidance.cs" />
+    <Compile Include="Guidances\VacuumGuidance.cs" />
     <Compile Include="Initialization\Bootstrapper.cs" />
     <Compile Include="Initialization\Cleanup.cs" />
     <Compile Include="Initialization\Dependencies.cs" />

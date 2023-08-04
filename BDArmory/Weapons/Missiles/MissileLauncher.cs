@@ -5,8 +5,6 @@ using System.Text;
 using UniLinq;
 using UnityEngine;
 
-using MathNet.Numerics;
-
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.FX;
@@ -1690,9 +1688,16 @@ namespace BDArmory.Weapons.Missiles
                     {
                         BeamRideGuidance();
                     }
-                    else if (GuidanceMode == GuidanceModes.RCS)
+                    else if (GuidanceMode == GuidanceModes.Vacuum)
                     {
                         VacuumGuidance();
+                    }
+                    else if (GuidanceMode == GuidanceModes.RCS)
+                    {
+                        part.transform.rotation = Quaternion.RotateTowards(part.transform.rotation, Quaternion.LookRotation(TargetPosition - part.transform.position, part.transform.up), turnRateDPS * Time.fixedDeltaTime);
+                        if (hasRCS) {
+                            DoRCS(TargetVelocity - vessel.obt_velocity);
+                        }
                     }
                     else if (GuidanceMode == GuidanceModes.Cruise)
                     {
@@ -2491,73 +2496,26 @@ namespace BDArmory.Weapons.Missiles
         }
 
         void VacuumGuidance() {
-            if (BDArmorySettings.DEBUG_LINES)
-                DrawDebugLine(radarTarget.position, TargetPosition, Color.green);
-            
-            Vector3? desiredAcceleration;
-            float maxMissileAcceleration = (float)(thrust / vessel.totalMass);
-            if (!TargetAcquired) {
-                desiredAcceleration = part.transform.forward * maxMissileAcceleration;
+            if (_guidance == null)
+            {
+                _guidance = new VacuumGuidance(this);
             }
-            else {
-                (desiredAcceleration, _) = ComputeVacuumIntercept(
-                    TargetPosition - part.transform.position,
-                    TargetVelocity - vessel.obt_velocity,
-                    TargetAcceleration - vessel.graviticAcceleration,
-                    maxMissileAcceleration
-                );
-                if (!desiredAcceleration.HasValue) {
-                    // If no solution found, disregard target acceleration
-                    (desiredAcceleration, _) = ComputeVacuumIntercept(
-                        TargetPosition - part.transform.position,
-                        TargetVelocity - vessel.obt_velocity,
-                        Vector3.zero,
-                        maxMissileAcceleration
-                    );
-                }
-            }
-            if (!desiredAcceleration.HasValue) throw new Exception("Desired acceleration not found");
+
+            var desiredAcceleration = _guidance.GetDirection(this, TargetPosition, TargetVelocity, TargetAcceleration);
 
             // Rotate missile
             var partTransform = part.transform;
             part.transform.rotation = Quaternion.RotateTowards(
                 partTransform.rotation,
-                Quaternion.LookRotation(desiredAcceleration.Value, partTransform.up),
+                Quaternion.LookRotation(desiredAcceleration, partTransform.up),
                 debugTurnRate * Time.fixedDeltaTime // TODO: improve turn rate logic
             );
 
-            Throttle = Vector3.Dot(partTransform.forward, desiredAcceleration.Value.normalized);
+            Throttle = Vector3.Dot(partTransform.forward, desiredAcceleration.normalized);
 
             if (hasRCS) {
-                DoRCS(desiredAcceleration.Value * (float)vessel.totalMass);
+                DoRCS(desiredAcceleration * (float)vessel.totalMass);
             }
-        }
-        
-        static (Vector3?, float) ComputeVacuumIntercept(
-            Vector3 targetPosition,
-            Vector3 targetVelocity,
-            Vector3 targetAcceleration,
-            float maxMissileAcceleration
-        ) {
-            var equation = new Polynomial(-maxMissileAcceleration * maxMissileAcceleration);
-            for (int i = 0; i < 3; i++) {
-                var axisPolynomial = new Polynomial(
-                    targetAcceleration[i],
-                    2 * targetVelocity[i],
-                    2 * targetPosition[i]
-                );
-                equation += axisPolynomial * axisPolynomial;
-            }
-            var roots = equation.Roots().Where(e => e.IsReal()).Select(e => e.Real).ToArray();
-        
-            if (!roots.Any())
-                return (null, float.PositiveInfinity);
-        
-            float targetTime = (float)(1 / roots.Max());
-        
-            var missileAcceleration = 2 * targetPosition / (targetTime * targetTime) + 2 * targetVelocity / targetTime + targetAcceleration;
-        
-            return (missileAcceleration, targetTime);
         }
 
         void DoAero(Vector3 targetPosition)
@@ -2868,6 +2826,10 @@ namespace BDArmory.Weapons.Missiles
 
                 case "augpronav":
                     GuidanceMode = GuidanceModes.APN;
+                    break;
+                
+                case "vacuum":
+                    GuidanceMode = GuidanceModes.Vacuum;
                     break;
 
                 default:
