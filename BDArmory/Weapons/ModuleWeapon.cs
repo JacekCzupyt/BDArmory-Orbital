@@ -3693,7 +3693,7 @@ namespace BDArmory.Weapons
                             if (!hitDetected) bulletPrediction = closestPointOfApproach;
                             if (BDArmorySettings.AIM_ASSIST && BDArmorySettings.DRAW_AIMERS && !hitDetected)
                             {
-                                var timeOfFlight = BallisticTrajectorySimulation(ref simCurrPos, simVelocity, distanceRemaining, timeRemaining, simDeltaTime, FlightGlobals.getAltitudeAtPos(targetPosition) < 0, SimulationStage.Normal, false); // For visuals, we want the trajectory sim with collision detection. Note: this is done after to avoid messing with simCurrPos.
+                                var timeOfFlight = BallisticTrajectorySimulation(ref simCurrPos, simVelocity, distanceRemaining, timeRemaining, simDeltaTime, FlightGlobals.getAltitudeAtPos(targetPosition) < 0); // For visuals, we want the trajectory sim with collision detection. Note: this is done after to avoid messing with simCurrPos.
                                 if (!hitDetected)
                                 {
                                     bulletPrediction = simCurrPos; // Overwrite the bulletPrediction with the results of the trajectory sim if a hit was detected.
@@ -3813,105 +3813,19 @@ namespace BDArmory.Weapons
         /// <param name="velocity"></param>
         /// <param name="maxTime"></param>
         /// <param name="timeStep"></param>
-        public float BallisticTrajectorySimulation(ref Vector3 position, Vector3 velocity, float maxDistance, float maxTime, float timeStep, bool ignoreWater = false, SimulationStage stage = SimulationStage.Normal, bool resetTrajectoryPoints = true)
-        {
-            float elapsedTime = 0f;
-            var startPosition = position;
-            if (FlightGlobals.getAltitudeAtPos(position) < 0) ignoreWater = true;
-            var gravity = (Vector3)FlightGlobals.getGeeForceAtPosition(position);
-            velocity += 0.5f * timeStep * gravity; // Boot-strap velocity calculation.
-            Ray ray = new Ray();
-            RaycastHit hit;
+        public float BallisticTrajectorySimulation(ref Vector3 position, Vector3 velocity, float maxDistance, float maxTime, float timeStep, bool ignoreWater = false) {
+            if (trajectoryPoints == null) trajectoryPoints = new List<Vector3>();
+            var ballisticsUtils = new BallisticsUtils(layerMask1, part, trajectoryPoints, fireTransforms[0]);
+            var elapsedTime = ballisticsUtils.BallisticTrajectorySimulation(
+                ref position,
+                velocity,
+                maxTime,
+                timeStep,
+                ignoreWater
+            );
+
             if (BDArmorySettings.DEBUG_LINES && BDArmorySettings.DRAW_AIMERS)
             {
-                if (trajectoryPoints == null) trajectoryPoints = new List<Vector3>();
-                if (resetTrajectoryPoints)
-                    trajectoryPoints.Clear();
-                if (trajectoryPoints.Count == 0)
-                    trajectoryPoints.Add(fireTransforms[0].position);
-                trajectoryPoints.Add(position);
-            }
-            while (elapsedTime < maxTime)
-            {
-                ray.origin = position;
-                ray.direction = velocity;
-                var deltaPosition = timeStep * velocity;
-                var deltaDistance = deltaPosition.magnitude;
-                var elapsedDistance = (startPosition - position).magnitude;
-                var altitude = FlightGlobals.getAltitudeAtPos(position + deltaPosition);
-                if ((Physics.Raycast(ray, out hit, deltaDistance, layerMask1) && (hit.collider != null && hit.collider.gameObject != null && hit.collider.gameObject.GetComponentInParent<Part>() != part)) // Ignore the part firing the projectile.
-                    || (!ignoreWater && altitude < 0) // Underwater
-                    || (stage == SimulationStage.Normal && elapsedTime + timeStep > maxTime) // Out of time
-                    || (stage == SimulationStage.Normal && maxDistance - elapsedDistance < deltaDistance)) // Out of distance
-                {
-                    switch (stage)
-                    {
-                        case SimulationStage.Normal:
-                            {
-                                if (elapsedTime + timeStep > maxTime) // Final time amount.
-                                {
-                                    // Debug.Log($"DEBUG Refining trajectory sim due to final time, time: {elapsedTime}, {timeStep}, {maxTime}, dist: {maxDistance}, {elapsedDistance}, {deltaDistance}");
-                                    velocity -= 0.5f * timeStep * gravity; // Correction to final velocity.
-                                    var finalTime = BallisticTrajectorySimulation(ref position, velocity, maxDistance - elapsedDistance, maxTime - elapsedTime, (maxTime - elapsedTime) / 4f, ignoreWater, SimulationStage.Final, false);
-                                    elapsedTime += finalTime;
-                                }
-                                else if (maxDistance - elapsedDistance < deltaDistance) // Final distance amount.
-                                {
-                                    // Debug.Log($"DEBUG Refining trajectory sim due to final distance, time: {elapsedTime}, {timeStep}, {maxTime}, dist: {maxDistance}, {elapsedDistance}, {deltaDistance}");
-                                    velocity -= 0.5f * timeStep * gravity; // Correction to final velocity.
-                                    var newTimeStep = timeStep * (maxDistance - elapsedDistance) / deltaDistance;
-                                    var finalTime = BallisticTrajectorySimulation(ref position, velocity, maxDistance - elapsedDistance, newTimeStep, newTimeStep / 4f, ignoreWater, SimulationStage.Final, false);
-                                    elapsedTime += finalTime;
-                                }
-                                else
-                                    goto case SimulationStage.Refining;
-                                break;
-                            }
-                        case SimulationStage.Refining: // Perform a more accurate final step for the collision.
-                            {
-                                // Debug.Log($"DEBUG Refining trajectory sim, time: {elapsedTime}, {timeStep}, {maxTime}, dist: {maxDistance}, {elapsedDistance}, {deltaDistance}");
-                                velocity -= 0.5f * timeStep * gravity; // Correction to final velocity.
-                                var finalTime = BallisticTrajectorySimulation(ref position, velocity, velocity.magnitude * timeStep, timeStep, timeStep / 4f, ignoreWater, timeStep > 5f * Time.fixedDeltaTime ? SimulationStage.Refining : SimulationStage.Final, false);
-                                elapsedTime += finalTime;
-                                break;
-                            }
-                        case SimulationStage.Final:
-                            {
-                                if (!ignoreWater && altitude < 0) // Underwater
-                                {
-                                    var currentAltitude = FlightGlobals.getAltitudeAtPos(position);
-                                    timeStep *= currentAltitude / (currentAltitude - altitude);
-                                    elapsedTime += timeStep;
-                                    position += timeStep * velocity;
-                                    // Debug.Log("DEBUG breaking trajectory sim due to water at " + position.ToString("F6") + " at altitude " + FlightGlobals.getAltitudeAtPos(position));
-                                }
-                                else // Collision
-                                {
-                                    elapsedTime += (hit.point - position).magnitude / velocity.magnitude;
-                                    position = hit.point;
-                                    // Debug.Log("DEBUG breaking trajectory sim due to hit at " + position.ToString("F6") + " at altitude " + FlightGlobals.getAltitudeAtPos(position));
-                                }
-                                break;
-                            }
-                    }
-                    break;
-                }
-                if (BDArmorySettings.DEBUG_LINES && BDArmorySettings.DRAW_AIMERS && stage != SimulationStage.Final)
-                    trajectoryPoints.Add(position);
-                position += deltaPosition;
-                gravity = (Vector3)FlightGlobals.getGeeForceAtPosition(position);
-                velocity += timeStep * gravity;
-                elapsedTime += timeStep;
-                if (elapsedDistance > maxDistance)
-                {
-                    // Debug.Log($"DEBUG breaking trajectory sim due to max distance: {maxDistance} at altitude {FlightGlobals.getAltitudeAtPos(position)}");
-                    break;
-                }
-            }
-            // if (elapsedTime > maxTime) Debug.Log($"DEBUG Time elapsed: {elapsedTime} / {maxTime}, dist: {maxDistance}, {(startPosition - position).magnitude}, {(timeStep * velocity).magnitude}");
-            if (BDArmorySettings.DEBUG_LINES && BDArmorySettings.DRAW_AIMERS && resetTrajectoryPoints)
-            {
-                trajectoryPoints.Add(position);
                 trajectoryRenderer = gameObject.GetComponent<LineRenderer>();
                 if (trajectoryRenderer == null)
                 {

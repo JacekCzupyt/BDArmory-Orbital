@@ -282,6 +282,7 @@
     <Compile Include="UI\ScoreWindow.cs" />
     <Compile Include="UI\VesselSpawnerWindow.cs" />
     <Compile Include="Utils\AIUtils.cs" />
+    <Compile Include="Utils\BallisticsUtils.cs" />
     <Compile Include="Utils\BDAEditorTools.cs" />
     <Compile Include="Utils\BDAMath.cs" />
     <Compile Include="Utils\BDAModuleInfos.cs" />
