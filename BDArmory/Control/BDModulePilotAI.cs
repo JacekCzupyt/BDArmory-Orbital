@@ -333,6 +333,11 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 10f, maxValue = 1000, stepIncrement = 10f, scene = UI_Scene.All)]
         public float minAltitude = 200f;
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_HardMinAltitude", advancedTweakable = true,
+            groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_PilotAI_Altitudes", groupStartCollapsed = true),
+            UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
+        public bool hardMinAltitude = false;
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MaxAltitude", //Max Altitude
             groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_PilotAI_Altitudes", groupStartCollapsed = true),
             UI_FloatRange(minValue = 100f, maxValue = 10000, stepIncrement = 100f, scene = UI_Scene.All)]
@@ -997,6 +1002,8 @@ namespace BDArmory.Control
         int terrainAlertTicker = 0; // A ticker to reduce the frequency of terrain alert checks.
         bool belowMinAltitude; // True when below minAltitude or avoiding terrain.
         bool gainAltInhibited = false; // Inhibit gain altitude to minimum altitude when chasing or evading someone as long as we're pointing upwards.
+        bool gainingAlt = false, wasGainingAlt = false; // Flags for tracking when we're gaining altitude.
+        Vector3 gainAltSmoothedForwardPoint = default; // Smoothing for the terrain adjustments of gaining altitude.
         bool avoidingTerrain = false; // True when avoiding terrain.
         bool initialTakeOff = true; // False after the initial take-off.
         float terrainAlertDetectionRadius = 30.0f; // Sphere radius that the vessel occupies. Should cover most vessels. FIXME This could be based on the vessel's maximum width/height.
@@ -1786,7 +1793,7 @@ namespace BDArmory.Control
                 if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDModulePilotAI]: " + vessel.vesselName + " is no longer inhibiting gain alt");
             }
 
-            if (!gainAltInhibited && belowMinAltitude && (currentStatus == "Engaging" || currentStatus == "Evading" || currentStatus == "Ramming speed!") && vessel.atmDensity > 0.1f)
+            if (!hardMinAltitude && !gainAltInhibited && belowMinAltitude && (currentStatus == "Engaging" || currentStatus == "Evading" || currentStatus == "Ramming speed!") && vessel.atmDensity > 0.1f)
             { // Vessel went below minimum altitude while "Engaging", "Evading" or "Ramming speed!", enable the gain altitude inhibitor.
                 gainAltInhibited = true;
                 if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDModulePilotAI]: " + vessel.vesselName + " was " + currentStatus + " and went below min altitude, inhibiting gain alt.");
@@ -1802,6 +1809,7 @@ namespace BDArmory.Control
             CheckLandingGear();
             if (IsRunningWaypoints) UpdateWaypoint(); // Update the waypoint state.
 
+            wasGainingAlt = gainingAlt; gainingAlt = false;
             if (!vessel.LandedOrSplashed && ((!(ramming && steerMode == SteerModes.Aiming) && FlyAvoidTerrain(s)) || (!ramming && FlyAvoidOthers(s)))) // Avoid terrain and other planes, unless we're trying to ram stuff.
             { turningTimer = 0; }
             else if (initialTakeOff) // Take off.
@@ -2452,12 +2460,12 @@ namespace BDArmory.Control
 
             //roll
             Vector3 currentRoll = -vesselTransform.forward;
-            float rollUp = (steerMode == SteerModes.Aiming ? 5f : 10f);
+            float rollUp = steerMode == SteerModes.Aiming ? 5f : 10f;
             if (steerMode == SteerModes.NormalFlight)
             {
                 rollUp += (1 - finalMaxSteer) * 10f;
             }
-            rollTarget = (targetPosition + (rollUp * upDirection)) - vesselTransform.position;
+            rollTarget = targetPosition + (rollUp * upDirection) - vesselTransform.position;
 
             //test
             if (steerMode == SteerModes.Aiming && !belowMinAltitude)
@@ -2483,24 +2491,31 @@ namespace BDArmory.Control
                 }
             }
             else if (belowMinAltitude && !gainAltInhibited)
-                rollTarget = Vector3.Lerp(BodyUtils.GetSurfaceNormal(vesselTransform.position), upDirection, (float)vessel.radarAltitude / minAltitude) * 100; // Adjust the roll target smoothly from the surface normal to upwards to avoid clipping wings into terrain on take-off.
-            else if (!avoidingTerrain && vessel.verticalSpeed < 0 && Vector3.Dot(rollTarget, upDirection) < 0 && Vector3.Dot(rollTarget, vessel.Velocity()) < 0) // If we're not avoiding terrain, heading downwards and the roll target is behind us and downwards, check that a circle arc of radius "turn radius" (scaled by twiddle factor minimum) tilted at angle of rollTarget has enough room to avoid hitting the ground.
             {
-                // The following calculates the altitude required to turn in the direction of the rollTarget based on the current velocity and turn radius.
-                // The setup is a circle in the plane of the rollTarget, which is tilted by angle phi from vertical, with the vessel at the point subtending an angle theta as measured from the top of the circle.
-                var n = Vector3.Cross(vessel.srf_vel_direction, rollTarget).normalized; // Normal of the plane of rollTarget.
-                var m = Vector3.Cross(n, upDirection).normalized; // cos(theta) = dot(m,v).
-                if (m.magnitude < 0.1f) m = upDirection; // In case n and upDirection are colinear.
-                var a = Vector3.Dot(n, upDirection); // sin(phi) = dot(n,up)
-                var b = BDAMath.Sqrt(1f - a * a); // cos(phi) = sqrt(1-sin(phi)^2)
-                var r = turnRadiusTwiddleFactorMax * turnRadius + 0.5f * (float)vessel.srfSpeed * controlSurfaceDeploymentTime; // Worst-case radius of turning circle. (We use the max and 1/2 ctrl srf deploy time to avoid triggering terrain avoidance since we're inverted even though the plane ought to be able to manage the turn with the min.)
-
-                var h = r * (1 + Vector3.Dot(m, vessel.srf_vel_direction)) * b; // Required altitude: h = r * (1+cos(theta)) * cos(phi).
-                if (vessel.radarAltitude < h) // Too low for this manoeuvre.
+                rollTarget = Vector3.Lerp(BodyUtils.GetSurfaceNormal(vesselTransform.position), upDirection, (float)vessel.radarAltitude / minAltitude) * 100; // Adjust the roll target smoothly from the surface normal to upwards to avoid clipping wings into terrain on take-off.
+            }
+            else if (!avoidingTerrain && Vector3.Dot(rollTarget, upDirection) < 0 && Vector3.Dot(rollTarget, vessel.Velocity()) < 0) // If we're not avoiding terrain and the roll target is behind us and downwards, check that a circle arc of radius "turn radius" (scaled by twiddle factor minimum) tilted at angle of rollTarget has enough room to avoid hitting the ground.
+            {
+                if (belowMinAltitude) // Never do inverted loops below min altitude.
+                { requiresLowAltitudeRollTargetCorrection = true; }
+                else // Otherwise, check the turning circle.
                 {
-                    requiresLowAltitudeRollTargetCorrection = true; // For simplicity, we'll apply the correction after the projections have occurred.
+                    // The following calculates the altitude required to turn in the direction of the rollTarget based on the current velocity and turn radius.
+                    // The setup is a circle in the plane of the rollTarget, which is tilted by angle phi from vertical, with the vessel at the point subtending an angle theta as measured from the top of the circle.
+                    var n = Vector3.Cross(vessel.srf_vel_direction, rollTarget).normalized; // Normal of the plane of rollTarget.
+                    var m = Vector3.Cross(n, upDirection).normalized; // cos(theta) = dot(m,v).
+                    if (m.magnitude < 0.1f) m = upDirection; // In case n and upDirection are colinear.
+                    var a = Vector3.Dot(n, upDirection); // sin(phi) = dot(n,up)
+                    var b = BDAMath.Sqrt(1f - a * a); // cos(phi) = sqrt(1-sin(phi)^2)
+                    var r = turnRadiusTwiddleFactorMax * turnRadius; // Worst-case radius of turning circle.
+
+                    var h = r * (1 + Vector3.Dot(m, vessel.srf_vel_direction)) * b; // Required altitude: h = r * (1+cos(theta)) * cos(phi).
+                    if (vessel.radarAltitude + Vector3.Dot(vessel.srf_velocity, upDirection) * controlSurfaceDeploymentTime < h) // Too low for this manoeuvre.
+                    {
+                        requiresLowAltitudeRollTargetCorrection = true; // For simplicity, we'll apply the correction after the projections have occurred.
+                    }
+                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Low-alt loop: {requiresLowAltitudeRollTargetCorrection:G4}: {vessel.radarAltitude:G4} < {h:G4}, r: {r}");
                 }
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Low-alt loop: {requiresLowAltitudeRollTargetCorrection:G4}: {vessel.radarAltitude:G4} < {h:G4}, r: {r}");
             }
             if (useWaypointRollTarget && IsRunningWaypoints)
             {
@@ -3186,11 +3201,10 @@ namespace BDArmory.Control
 
         void TakeOff(FlightCtrlState s)
         {
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Taking off/Gaining altitude");
-
             if (vessel.LandedOrSplashed && vessel.srfSpeed < takeOffSpeed)
             {
                 SetStatus(initialTakeOff ? "Taking off" : vessel.Splashed ? "Splashed" : "Landed");
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Taking off");
                 if (vessel.Splashed)
                 { vessel.ActionGroups.SetGroup(KSPActionGroup.Gear, false); }
                 assignedPositionWorld = vessel.transform.position;
@@ -3210,19 +3224,25 @@ namespace BDArmory.Control
             Vector3 forwardDirection = (vessel.horizontalSrfSpeed < 10 ? vesselTransform.up : (Vector3)vessel.srf_vel_direction) * 100; // Forward direction not adjusted for terrain.
             Vector3 forwardPoint = vessel.transform.position + forwardDirection * 100; // Forward point not adjusted for terrain.
             Ray ray = new Ray(forwardPoint, relativeVelocityDownDirection); // Check ahead and below.
-            Vector3 terrainBelowAheadNormal = (Physics.Raycast(ray, out rayHit, minAltitude + 1.0f, (int)LayerMasks.Scenery)) ? rayHit.normal : upDirection; // Terrain normal below point ahead.
+            Vector3 terrainBelowAheadNormal = Physics.Raycast(ray, out rayHit, minAltitude + 1.0f, (int)LayerMasks.Scenery) ? rayHit.normal : upDirection; // Terrain normal below point ahead.
             ray = new Ray(vessel.transform.position, relativeVelocityDownDirection); // Check here below.
-            Vector3 terrainBelowNormal = (Physics.Raycast(ray, out rayHit, minAltitude + 1.0f, (int)LayerMasks.Scenery)) ? rayHit.normal : upDirection; // Terrain normal below here.
+            Vector3 terrainBelowNormal = Physics.Raycast(ray, out rayHit, minAltitude + 1.0f, (int)LayerMasks.Scenery) ? rayHit.normal : upDirection; // Terrain normal below here.
             Vector3 normalToUse = Vector3.Dot(vessel.srf_vel_direction, terrainBelowNormal) < Vector3.Dot(vessel.srf_vel_direction, terrainBelowAheadNormal) ? terrainBelowNormal : terrainBelowAheadNormal; // Use the normal that has the steepest slope relative to our velocity.
             if (BDArmorySettings.SPACE_HACKS && vessel.atmDensity < 0.1f) //no need to worry about stalling in null atmo
             {
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Gaining altitude");
                 FlyToPosition(s, vessel.transform.position + terrainBelowAheadNormal * 100); //point nose perpendicular to surface for maximum vertical thrust.
             }
             else
             {
-                forwardPoint = vessel.transform.position + forwardDirection.ProjectOnPlanePreNormalized(normalToUse).normalized * 100; // Forward point adjusted for terrain.
-                float rise = Mathf.Clamp((float)vessel.srfSpeed * 0.215f, 5, 100); // Up to 45° rise angle above terrain changes at 465m/s.
-                FlyToPosition(s, forwardPoint + upDirection * rise);
+                forwardPoint = forwardDirection.ProjectOnPlanePreNormalized(normalToUse).normalized * 100; // Forward point adjusted for terrain relative to vessel.
+                var alpha = Mathf.Clamp(0.9f + 0.1f * radarAlt / minAltitude, 0f, 0.99f);
+                gainAltSmoothedForwardPoint = wasGainingAlt ? alpha * gainAltSmoothedForwardPoint + (1f - alpha) * forwardPoint : forwardPoint; // Adjust the forward point a bit more smoothly to avoid sudden jerks.
+                gainingAlt = true;
+                float rise = Mathf.Max(5f, (float)vessel.srfSpeed * 0.25f) * Mathf.Max(speedController.TWR * Mathf.Clamp01(radarAlt / 20f), 1f); // Scale climb rate by TWR (if >1 and not really close to terrain) to allow more powerful craft to climb faster.
+                rise = Mathf.Min(rise, 1.5f * (defaultAltitude - radarAlt)); // Aim for at most 50% higher than the default altitude.
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Gaining altitude @ {Mathf.Rad2Deg * Mathf.Atan(rise / 100f):0.0}°");
+                FlyToPosition(s, vessel.transform.position + gainAltSmoothedForwardPoint + upDirection * rise);
             }
         }
 

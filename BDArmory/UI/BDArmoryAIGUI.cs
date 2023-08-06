@@ -671,7 +671,7 @@ namespace BDArmory.UI
 
         Rect ToggleButtonRect(float indent, float lines, float contentWidth)
         {
-            return new Rect(indent, (lines * entryHeight), contentWidth - (2 * indent), entryHeight);
+            return new Rect(indent, lines * entryHeight, contentWidth - (2 * indent), entryHeight);
         }
 
         Rect ToggleButtonRects(float indent, float lines, float pos, float of, float contentWidth)
@@ -1444,8 +1444,10 @@ namespace BDArmory.UI
                                 altLines++;
                             }
 
-                            ActivePilot.maxAltitudeToggle = GUI.Toggle(new Rect(leftIndent, altLines * entryHeight, contentWidth - (2 * leftIndent), entryHeight),
-                            ActivePilot.maxAltitudeToggle, StringUtils.Localize("#LOC_BDArmory_MaxAltitude"), ActivePilot.maxAltitudeToggle ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"max altitude AGL"
+                            ActivePilot.hardMinAltitude = GUI.Toggle(ToggleButtonRects(leftIndent, altLines, 0, 2, contentWidth), ActivePilot.hardMinAltitude,
+                                StringUtils.Localize("#LOC_BDArmory_HardMinAltitude"), ActivePilot.hardMinAltitude ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Hard Min Altitude"
+                            ActivePilot.maxAltitudeToggle = GUI.Toggle(ToggleButtonRects(leftIndent, altLines, 1, 2, contentWidth), ActivePilot.maxAltitudeToggle,
+                                StringUtils.Localize("#LOC_BDArmory_MaxAltitude"), ActivePilot.maxAltitudeToggle ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"max altitude AGL"
                             altLines += 1.25f;
 
                             if (ActivePilot.maxAltitudeToggle)
