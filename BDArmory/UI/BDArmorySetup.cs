@@ -2524,12 +2524,14 @@ namespace BDArmory.UI
                         //     PROF_n = Mathf.RoundToInt(Mathf.Pow(10, PROF_n_pow));
                         // }
 
+                        // if (GUI.Button(SLineRect(++line), "Test DotNorm performance"))
+                        //     TestDotNormPerformance();
                         // if (GUI.Button(SLineRect(++line), "Vessel Naming"))
                         // {
                         //     var v = FlightGlobals.ActiveVessel;
                         //     Debug.Log($"DEBUG vesselName: {v.vesselName}, GetName: {v.GetName()}, GetDisplayName: {v.GetDisplayName()}");
                         // }
-                        // if (GUI.Button(SLineRect(++line), "Test rand performance"))
+                        // if (GUI.Button(SLineRect(++line), "Test name performance"))
                         //     TestNamePerformance();
                         // if (GUI.Button(SLineRect(++line), "Test rand performance"))
                         //     TestRandPerformance();
@@ -4350,6 +4352,21 @@ namespace BDArmory.UI
                 clip = SoundUtils.GetAudioClip("BDArmory/Sounds/deployClick");
             dt = Time.realtimeSinceStartup - tic;
             Debug.Log($"DEBUG GetAudioClip took {dt / N:G3}s");
+        }
+
+        public static void TestDotNormPerformance()
+        {
+            var watch = new System.Diagnostics.Stopwatch();
+            float µsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+            Debug.Log($"DEBUG Clock resolution: {µsResolution}µs, {PROF_N} outer loops, {PROF_n} inner loops");
+            var v1 = UnityEngine.Random.insideUnitSphere;
+            var v2 = UnityEngine.Random.insideUnitSphere;
+            float dot = 0;
+            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { dot = Vector3.Dot(v1.normalized, v2.normalized); } };
+            Debug.Log($"DEBUG Dot(v1.norm, v2.norm) took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs to give {dot}");
+            dot = 0;
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { dot = v1.DotNormalized(v2); } };
+            Debug.Log($"DEBUG v1.DotNorm(v2) took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs to give {dot}");
         }
 
         public static void TestNamePerformance()

@@ -1245,7 +1245,7 @@ namespace BDArmory.Radar
                         Vector3 relPositionTarget = targetV.CoM - position;
 
                         // Modify  total lockbreak strength of standoff jammer by angle off the vector to target
-                        float angleModifier = Vector3.Dot(relPositionTarget.normalized, relPositionJammer.normalized);
+                        float angleModifier = relPositionTarget.DotNormalized(relPositionJammer);
                         float sojLBS = Mathf.Clamp01(angleModifier * angleModifier * angleModifier);
 
                         // Modify lockbreak strength by relative sqr distance
