@@ -46,7 +46,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool INFINITE_EC = false;                          //Infinite electric charge
         [BDAPersistentSettingsField] public static bool BULLET_HITS = true;
         [BDAPersistentSettingsField] public static bool EJECT_SHELLS = true;
-        [BDAPersistentSettingsField] public static bool VESSEL_RELATIVE_BULLET_CHECKS = false;
+        [BDAPersistentSettingsField] public static bool VESSEL_RELATIVE_BULLET_CHECKS = true;
         [BDAPersistentSettingsField] public static bool AIM_ASSIST = true;
         [BDAPersistentSettingsField] public static bool AIM_ASSIST_MODE = true;              // true = reticle follows bullet CPA position, false = reticle follows aiming position.
         [BDAPersistentSettingsField] public static bool DRAW_AIMERS = true;
