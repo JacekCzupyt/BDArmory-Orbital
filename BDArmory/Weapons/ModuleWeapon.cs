@@ -2210,7 +2210,7 @@ namespace BDArmory.Weapons
                                         var kbVel = BDKrakensbane.FrameVelocityV3f;
                                         pBullet.currentVelocity = firedVelocity;
                                         pBullet.MoveBullet(iTime); // Move the bullet forward by the amount of time within the physics frame determined by it's firing rate. Note: the default is 1 frame and reduces to 0.
-                                        pBullet.currentVelocity = bVel;
+                                        pBullet.currentVelocity = bVel + Time.fixedDeltaTime * FlightGlobals.getGeeForceAtPosition(transform.position);
                                         if (kbVel.IsZero()) pBullet.transform.position += pVel * Time.fixedDeltaTime;
                                         pBullet.SetTracerPosition();
                                         pBullet.transform.position += (pVel + kbVel) * Time.fixedDeltaTime;
