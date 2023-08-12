@@ -1991,15 +1991,9 @@ namespace BDArmory.Weapons
                 }
                 return;
             }
-            float timeGap = ((60 / roundsPerMinute) * fireTransforms.Length) * TimeWarp.CurrentRate; //this way weapon delivers stated RPM, not RPM * barrel num
-            if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
-                timeGap = ((60 / BDArmorySettings.FIRE_RATE_OVERRIDE) * fireTransforms.Length) * TimeWarp.CurrentRate;
-
-            if (useRippleFire && fireState.Length > 1)
-            {
-                timeGap /= fireTransforms.Length; //to maintain RPM if only firing one barrel at a time - This should only be being called on guns with multiple fireanims(and thus multiple independant barrels); is causing twinlinked weapons to gain 2x firespeed in barrageMode
-            }
-            if (Time.time - timeFired > timeGap
+            float timeGap = GetTimeGap();
+            
+            if (Time.fixedTime - timeFired > timeGap
                 && !isOverheated
                 && !isReloading
                 && !pointingAtSelf
@@ -2009,7 +2003,7 @@ namespace BDArmory.Weapons
                 bool effectsShot = false;
                 CheckLoadedAmmo();
                 //Transform[] fireTransforms = part.FindModelTransforms("fireTransform");
-                for (float iTime = Mathf.Min(Time.time - timeFired - timeGap, TimeWarp.fixedDeltaTime); iTime >= 0; iTime -= timeGap)
+                for (float iTime = Mathf.Min(Time.fixedTime - timeFired - timeGap, TimeWarp.fixedDeltaTime); iTime >= 0; iTime -= timeGap)
                     for (int i = 0; i < fireTransforms.Length; i++)
                     {
                         if ((!useRippleFire || fireState.Length == 1) || (useRippleFire && i == barrelIndex))
@@ -2080,9 +2074,9 @@ namespace BDArmory.Weapons
 
                                     pBullet.timeElapsedSinceCurrentSpeedWasAdjusted = iTime;
                                     // measure bullet lifetime in time rather than in distance, because distances get very relative in orbit
-                                    pBullet.timeToLiveUntil = Mathf.Max(maxTargetingRange, maxEffectiveDistance) / bulletVelocity * 1.1f + Time.time;
+                                    pBullet.timeToLiveUntil = Mathf.Max(maxTargetingRange, maxEffectiveDistance) / bulletVelocity * 1.1f + Time.fixedTime;
 
-                                    timeFired = Time.time - iTime;
+                                    timeFired = Time.fixedTime - iTime;
                                     if (isRippleFiring && weaponManager.barrageStagger > 0) // Add variability to fired time to cause variability in reload time.
                                     {
                                         var reloadVariability = UnityEngine.Random.Range(-weaponManager.barrageStagger, weaponManager.barrageStagger);
@@ -2276,6 +2270,20 @@ namespace BDArmory.Weapons
             {
                 spinningDown = true;
             }
+        }
+
+        float GetTimeGap()
+        {
+            float timeGap = ((60 / roundsPerMinute) * fireTransforms.Length) * TimeWarp.CurrentRate; //this way weapon delivers stated RPM, not RPM * barrel num
+            if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
+                timeGap = ((60 / BDArmorySettings.FIRE_RATE_OVERRIDE) * fireTransforms.Length) * TimeWarp.CurrentRate;
+
+            if (useRippleFire && fireState.Length > 1)
+            {
+                timeGap /= fireTransforms.Length; //to maintain RPM if only firing one barrel at a time - This should only be being called on guns with multiple fireanims(and thus multiple independant barrels); is causing twinlinked weapons to gain 2x firespeed in barrageMode
+            }
+
+            return timeGap;
         }
 
         public bool CanFireSoon()
@@ -3384,7 +3392,7 @@ namespace BDArmory.Weapons
             {
                 if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
                 {
-                    if (!targetAcquired && (!weaponManager || Time.time - lastGoodTargetTime > Mathf.Max(60f / BDArmorySettings.FIRE_RATE_OVERRIDE, weaponManager.targetScanInterval)))
+                    if (!targetAcquired && (!weaponManager || Time.fixedTime - lastGoodTargetTime > Mathf.Max(60f / BDArmorySettings.FIRE_RATE_OVERRIDE, weaponManager.targetScanInterval)))
                     {
                         autoFire = false;
                         return;
@@ -3392,7 +3400,7 @@ namespace BDArmory.Weapons
                 }
                 else
                 {
-                    if (!targetAcquired && (!weaponManager || Time.time - lastGoodTargetTime > Mathf.Max(60f / roundsPerMinute, weaponManager.targetScanInterval)))
+                    if (!targetAcquired && (!weaponManager || Time.fixedTime - lastGoodTargetTime > Mathf.Max(60f / roundsPerMinute, weaponManager.targetScanInterval)))
                     {
                         autoFire = false;
                         return;
@@ -3413,7 +3421,7 @@ namespace BDArmory.Weapons
                     }
                 }
                 // Continue aiming towards where the target is expected to be while reloading based on the last measured pos, vel, acc.
-                finalAimTarget = AIUtils.PredictPosition(lastFinalAimTarget, targetVelocity, targetAcceleration, Time.time - lastGoodTargetTime); // FIXME Check this predicted position when in orbit.
+                finalAimTarget = AIUtils.PredictPosition(lastFinalAimTarget, targetVelocity, targetAcceleration, Time.fixedTime - lastGoodTargetTime); // FIXME Check this predicted position when in orbit.
                 fixedLeadOffset = targetPosition - finalAimTarget; //for aiming fixed guns to moving target
 
                 if (BDArmorySettings.DEBUG_LINES && BDArmorySettings.DEBUG_WEAPONS)
@@ -4596,14 +4604,14 @@ namespace BDArmory.Weapons
 
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
             {
-                if (Time.time - lastGoodTargetTime > Mathf.Max(BDArmorySettings.FIRE_RATE_OVERRIDE / 60f, weaponManager.targetScanInterval))
+                if (Time.fixedTime - lastGoodTargetTime > Mathf.Max(BDArmorySettings.FIRE_RATE_OVERRIDE / 60f, weaponManager.targetScanInterval))
                 {
                     targetAcquisitionType = TargetAcquisitionType.None;
                 }
             }
             else
             {
-                if (Time.time - lastGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, weaponManager.targetScanInterval))
+                if (Time.fixedTime - lastGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, weaponManager.targetScanInterval))
                 {
                     targetAcquisitionType = TargetAcquisitionType.None;
                 }
@@ -4852,7 +4860,7 @@ namespace BDArmory.Weapons
             atprAcquired = false;
             lastTargetAcquisitionType = targetAcquisitionType;
             closestTarget = Vector3.zero;
-            if (Time.time - lastGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, weaponManager.targetScanInterval))
+            if (Time.fixedTime - lastGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, weaponManager.targetScanInterval))
             {
                 targetAcquisitionType = TargetAcquisitionType.None;
             }
