@@ -1993,7 +1993,7 @@ namespace BDArmory.Weapons
             }
             float timeGap = GetTimeGap();
             
-            if (Time.fixedTime - timeFired > timeGap
+            if (Time.fixedTime + Time.fixedDeltaTime - timeFired > timeGap
                 && !isOverheated
                 && !isReloading
                 && !pointingAtSelf
@@ -2003,7 +2003,7 @@ namespace BDArmory.Weapons
                 bool effectsShot = false;
                 CheckLoadedAmmo();
                 //Transform[] fireTransforms = part.FindModelTransforms("fireTransform");
-                for (float iTime = Mathf.Min(Time.fixedTime - timeFired - timeGap, TimeWarp.fixedDeltaTime); iTime >= 0; iTime -= timeGap)
+                for (float iTime = Mathf.Min(Time.fixedTime + Time.fixedDeltaTime - timeFired - timeGap, TimeWarp.fixedDeltaTime); iTime >= 0; iTime -= timeGap)
                     for (int i = 0; i < fireTransforms.Length; i++)
                     {
                         if ((!useRippleFire || fireState.Length == 1) || (useRippleFire && i == barrelIndex))
@@ -2076,7 +2076,7 @@ namespace BDArmory.Weapons
                                     // measure bullet lifetime in time rather than in distance, because distances get very relative in orbit
                                     pBullet.timeToLiveUntil = Mathf.Max(maxTargetingRange, maxEffectiveDistance) / bulletVelocity * 1.1f + Time.fixedTime;
 
-                                    timeFired = Time.fixedTime - iTime;
+                                    timeFired = Time.fixedTime + Time.fixedDeltaTime - iTime;
                                     if (isRippleFiring && weaponManager.barrageStagger > 0) // Add variability to fired time to cause variability in reload time.
                                     {
                                         var reloadVariability = UnityEngine.Random.Range(-weaponManager.barrageStagger, weaponManager.barrageStagger);
@@ -2295,7 +2295,7 @@ namespace BDArmory.Weapons
             if (timeGap <= weaponManager.targetScanInterval)
                 return true;
             else
-                return (Time.time - timeFired >= timeGap - weaponManager.targetScanInterval);
+                return (Time.fixedTime + Time.fixedDeltaTime - timeFired >= timeGap - weaponManager.targetScanInterval);
         }
         #endregion Guns
         //lasers
