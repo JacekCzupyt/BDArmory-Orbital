@@ -32,6 +32,72 @@ namespace BDArmory.Utils
         {
             return position + time * velocity + 0.5f * time * time * acceleration;
         }
+        
+        /// <summary>
+        /// Simulate a future position of an object given its current position, velocity and acceleration,
+        /// accounting for change in gravitational force and FlightIntegrator errors.
+        /// Assume provided acceleration is a sum of gravitational and some constant acceleration
+        /// </summary>
+        /// <param name="position">Initial position</param>
+        /// <param name="velocity">Initial velocity</param>
+        /// <param name="acceleration">Initial acceleration</param>
+        /// <param name="time">Predict state at time</param>
+        /// <param name="timeStep">Simulation time step</param>
+        /// <param name="isRb">Object is rigid body</param>
+        /// <returns>(position, velocity, acceleration) at requested time</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector3, Vector3, Vector3) PredictStateBallistic(Vector3 position, Vector3 velocity, Vector3 acceleration, float time, float timeStep, bool isRb = true)
+        {
+            float timeElapsed = 0;
+            // Get constant acceleratoin independent of gravity
+            Vector3 a0 = acceleration - FlightGlobals.getGeeForceAtPosition(position);
+            
+            // Correct integration error
+            if (isRb) 
+            {
+                velocity += a0 * Time.fixedDeltaTime / 2;
+                
+                // TODO: where to find ODC setting state?
+                // if(ORBITAL_DRIFT_COMPENSATION == false)
+                //     velocity += FlightGlobals.getGeeForceAtPosition(position) * Time.fixedDeltaTime / 2;
+            }
+
+            // First leapfrog initial step
+            velocity += acceleration * timeStep / 2;
+            
+            // Leapfrog
+            while (timeElapsed < time && timeStep > Time.fixedDeltaTime)
+            {
+                while (timeElapsed + timeStep > time && timeStep > Time.fixedDeltaTime)
+                {
+                    timeStep /= 4;
+                    velocity -= (a0 + FlightGlobals.getGeeForceAtPosition(position)) * timeStep * 3 / 2;
+                }
+
+                if (timeStep <= Time.fixedDeltaTime)
+                {
+                    velocity -= (a0 + FlightGlobals.getGeeForceAtPosition(position)) * (timeStep - time + timeElapsed) / 2;
+                    timeStep = time - timeElapsed;
+                }
+
+                position += velocity * timeStep;
+                velocity += ((a0) + FlightGlobals.getGeeForceAtPosition(position)) * timeStep;
+                timeElapsed += timeStep;
+            }
+            velocity -= (a0 + FlightGlobals.getGeeForceAtPosition(position)) * timeStep / 2;
+            
+            // Correct integration error
+            if (isRb) 
+            {
+                velocity -= a0 * Time.fixedDeltaTime / 2;
+                
+                // TODO: where to find ODC setting?
+                // if(ORBITAL_DRIFT_COMPENSATION == false)
+                //     velocity -= FlightGlobals.getGeeForceAtPosition(position) * Time.fixedDeltaTime / 2;
+            }
+            
+            return (position, velocity, a0 + FlightGlobals.getGeeForceAtPosition(position));
+        }
 
         public enum CPAType
         {
