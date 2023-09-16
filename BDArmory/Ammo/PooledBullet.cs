@@ -282,7 +282,7 @@ namespace BDArmory.Bullets
             timeAlive = 0;
             bulletTrail[0].material.mainTexture = GameDatabase.Instance.GetTexture(bulletTexturePath, false);
             bulletTrail[0].material.SetColor("_TintColor", currentColor);
-            bulletTrail[0].material.SetFloat("_Lum", (tracerLuminance > 0? tracerLuminance : 0.5f));
+            bulletTrail[0].material.SetFloat("_Lum", (tracerLuminance > 0 ? tracerLuminance : 0.5f));
             if (!string.IsNullOrEmpty(smokeTexturePath))
             {
                 bulletTrail[1].material.mainTexture = GameDatabase.Instance.GetTexture(smokeTexturePath, false);
@@ -499,8 +499,8 @@ namespace BDArmory.Bullets
             LeapfrogVelocityHalfStep(0.5f * period);
 
             // Full-timestep position change (leapfrog integrator)
-            transform.position += currentVelocity * period; //move bullet
-            distanceTraveled += currentVelocity.magnitude * period; // calculate flight distance for achievement purposes
+            transform.position += period * currentVelocity; //move bullet
+            distanceTraveled += period * currentVelocity.magnitude; // calculate flight distance for achievement purposes
 
             if (!underwater && FlightGlobals.getAltitudeAtPos(transform.position) <= 0) // Check if the bullet is now underwater.
             {
@@ -511,7 +511,7 @@ namespace BDArmory.Bullets
                     tracerEndWidth /= 2;
 
                     currentVelocity = Vector3.Reflect(currentVelocity, VectorUtils.GetUpDirection(transform.position));
-                    currentVelocity = (hitAngle / 150) * currentVelocity * 0.65f;
+                    currentVelocity = (hitAngle / 150) * 0.65f * currentVelocity;
 
                     Vector3 randomDirection = UnityEngine.Random.rotation * Vector3.one;
 
@@ -626,7 +626,7 @@ namespace BDArmory.Bullets
         public void CheckBulletCollisionWithVessel(float period, Vessel vessel)
         {
             var relativeVelocity = currentVelocity - (Vector3)vessel.Velocity();
-            float dist = relativeVelocity.magnitude * period;
+            float dist = period * relativeVelocity.magnitude;
             bulletRay = new Ray(currPosition, relativeVelocity + 0.5f * period * FlightGlobals.getGeeForceAtPosition(transform.position));
             const int layerMask = (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels);
 
@@ -676,7 +676,7 @@ namespace BDArmory.Bullets
 
         public void CheckBulletCollisionWithScenery(float period)
         {
-            float dist = currentVelocity.magnitude * period;
+            float dist = period * currentVelocity.magnitude;
             bulletRay = new Ray(currPosition, currentVelocity + 0.5f * period * FlightGlobals.getGeeForceAtPosition(transform.position));
             var layerMask = (int)(LayerMasks.Scenery);
 
@@ -711,7 +711,7 @@ namespace BDArmory.Bullets
         /// <returns>true if a collision is detected, false otherwise.</returns>
         public bool CheckBulletCollision(float period)
         {
-            float dist = currentVelocity.magnitude * period;
+            float dist = period * currentVelocity.magnitude;
             bulletRay = new Ray(currPosition, currentVelocity + 0.5f * period * FlightGlobals.getGeeForceAtPosition(transform.position));
             const int layerMask = (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels | LayerMasks.Scenery);
             var hitCount = Physics.RaycastNonAlloc(bulletRay, hits, dist, layerMask);
@@ -836,7 +836,7 @@ namespace BDArmory.Bullets
 
                     // Changed from the previous 7 * caliber * 10 maximum to just > caliber since that no longer exists.
                     if ((distanceTraveled + hit.distance - distanceLastHit) * 1000f > caliber)
-                        {
+                    {
                         // The formula is based on distance and the caliber of the shaped charge, now since in our case we are talking
                         // about projectiles rather than shaped charges we'll take the projectile diameter and call that the jet size.
                         // Shaped charge jets have a diameter generally around 5% of the shaped charge's caliber, however in our case
@@ -1701,8 +1701,8 @@ namespace BDArmory.Bullets
             bulletTrail[0].startWidth = tracerStartWidth * factor * randomWidthScale;
             bulletTrail[0].endWidth = tracerEndWidth * factor * randomWidthScale;
 
-            bulletTrail[1].startWidth = (tracerStartWidth/2) * factor * 0.5f;
-            bulletTrail[1].endWidth = (tracerEndWidth/2) * factor * 0.5f;
+            bulletTrail[1].startWidth = (tracerStartWidth / 2) * factor * 0.5f;
+            bulletTrail[1].endWidth = (tracerEndWidth / 2) * factor * 0.5f;
         }
 
         public void KillBullet()
@@ -1724,11 +1724,11 @@ namespace BDArmory.Bullets
             // visual tracer velocity is relative to the observer (which uses srf_vel when below 100km (f*&king KSP!), not orb_vel)
             if (tracerLength == 0)
             {
-                linePositions[0] = transform.position + ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()) * tracerDeltaFactor * 0.45f * Time.fixedDeltaTime);
+                linePositions[0] = transform.position + tracerDeltaFactor * 0.45f * Time.fixedDeltaTime * (currentVelocity - FlightGlobals.ActiveVessel.Velocity());
             }
             else
             {
-                linePositions[0] = transform.position + ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized * tracerLength);
+                linePositions[0] = transform.position + tracerLength * (currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized;
             }
             linePositions[1] = transform.position;
             smokePositions[0] = startPosition;
@@ -1749,7 +1749,7 @@ namespace BDArmory.Bullets
                     //have it so each sec interval after timeAlive > smokePositions.length, have smokePositions[i] = smokePosition[i+1]if i < = smokePosition.length - 1;
                 }
                 timeAlive -= 1;
-            }            
+            }
             smokePositions[4] = transform.position;
             //if (Vector3.Distance(startPosition, transform.position) > 1000) smokePositions[0] = transform.position - ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized * 1000);
             bulletTrail[0].SetPositions(linePositions);

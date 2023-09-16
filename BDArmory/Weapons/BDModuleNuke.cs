@@ -91,11 +91,13 @@ namespace BDArmory.Weapons
         {
             get
             {
-                if (thisEngine) return thisEngine;
+                if (hasCheckedEngineCore || thisEngine) return thisEngine;
                 thisEngine = part.FindModuleImplementing<ModuleEngines>();
+                hasCheckedEngineCore = true;
                 return thisEngine;
             }
         }
+        bool hasCheckedEngineCore = false; // Only check once, it's not going to change.
         public void Start()
         {
             if (HighLogic.LoadedSceneIsFlight)

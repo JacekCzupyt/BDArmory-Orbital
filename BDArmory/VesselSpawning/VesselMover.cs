@@ -398,6 +398,7 @@ namespace BDArmory.VesselSpawning
                 vessel.IgnoreSpeed(240);
                 vessel.SetPosition(position);
                 vessel.SetWorldVelocity(Vector3d.zero);
+                vessel.acceleration = Vector3d.zero;
                 vessel.SetRotation(rotation); // Reset the rotation to prevent any angular momentum from messing with the orientation.
                 yield return wait;
                 KrakensbaneCorrection(ref position);
@@ -1507,7 +1508,7 @@ namespace BDArmory.VesselSpawning
     internal class CustomCraftBrowserDialog
     {
         // Keep some of these as static so that they're remembered between instances of showing the dialog.
-        public static EditorFacility facility = EditorFacility.SPH;
+        public static EditorFacility facility = EditorFacility.None;
         static string profile = HighLogic.SaveFolder;
         static string baseFolder;
         public static string displayFolder;
@@ -1547,7 +1548,9 @@ namespace BDArmory.VesselSpawning
                     craftList[craft].SaveToMetaFile(craftMeta);
                 }
             }
-            crewCounts = craftList.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.partNames.Where(p => SpawnUtils.PartCrewCounts.ContainsKey(p)).Sum(p => SpawnUtils.PartCrewCounts[p]));
+            var failedToParse = craftList.Where(kvp => kvp.Value is null || kvp.Value.partNames is null).ToList();
+            if (failedToParse.Count > 0) Debug.LogError($"[BDArmory.VesselMover]: Failed to properly parse some loadmeta files:\n{string.Join("\n  ", failedToParse)}");
+            crewCounts = craftList.ToDictionary(kvp => kvp.Key, kvp => (kvp.Value is null || kvp.Value.partNames is null) ? 0 : kvp.Value.partNames.Where(p => SpawnUtils.PartCrewCounts.ContainsKey(p)).Sum(p => SpawnUtils.PartCrewCounts[p]));
             ButtonStyle.stretchHeight = true;
             ButtonStyle.fontSize = 20;
             SelectedButtonStyle.stretchHeight = true;
@@ -1564,6 +1567,10 @@ namespace BDArmory.VesselSpawning
 
         public void ChangeFolder(EditorFacility facility, string subfolder = null)
         {
+            if (facility == EditorFacility.None) // Very first time used, default to the VAB if the current vessel was launched from there or fall back to the SPH.
+            {
+                facility = FlightDriver.LaunchSiteName == "LaunchPad" ? EditorFacility.VAB : EditorFacility.SPH;
+            }
             if (facility != CustomCraftBrowserDialog.facility)
             {
                 subfolder = null; // Revert to the base folder when changing facilities.

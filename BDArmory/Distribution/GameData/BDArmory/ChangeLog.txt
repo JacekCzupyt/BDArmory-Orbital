@@ -1,4 +1,23 @@
 ﻿IMPROVEMENTS / FIXES
+- UI:
+	- Add Japanese localization files thanks to user Taka005.
+- AI / WM:
+	- Fix the cubic solver giving invalid results for nearly degenerate cubics (used in aiming).
+	- Fix the debug line trajectories not showing the final part of the trajectory.
+- Radar:
+	- Add new radarTransformName field to ModuleRadar to allow setting custom radar direction/setting multiple radars to a part using custom radar models.
+- Vessel Mover:
+	- Make the vessel selection more resilient to corrupted vessel files/loadmeta.
+	- Default the vessel selection window to using the VAB if the initial vessel is spawned through the launchpad.
+- Weapons:
+	- Missiles:
+		- Fix some NREs when manually firing missiles.
+    - Add new guidanceDelay field to allow setting a delay between missile launch and missile beginning to maneuver towards a target.
+		- Dynamic Launch Range now uses missile EngageRange max instead of static launch range
+		- Improved launch behavior for missiles set to be fired at very short range.
+
+v1.6.5.0
+IMPROVEMENTS / FIXES
 - General: 
 	- Fix Pwing HP error with Pwing edges not contributing as much HP as they should.
 - UI:
@@ -24,7 +43,6 @@
 	- Anti-Missile weapons can now shoot down missiles in Paintball mode.
 	- Missiles:
 		- Add option (in Show Missile and Countermeasure Settings) to allow missiles to be fired from their full dynamic launch range instead of static launch range. 
-		- Fix missiles with a reload module launching incorrectly.
 		- Add trigger range setting for cluster missile submunition launch.
 		- Fix MultiMissilelaunchers resetting detonation Distance.
 		- Fix MML "TNT Mass Equivalent = -0.0018726" PAW label.

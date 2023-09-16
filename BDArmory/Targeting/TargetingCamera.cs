@@ -162,7 +162,7 @@ namespace BDArmory.Targeting
 
         void LateUpdate()
         {
-            if (cameraEnabled)
+            if (cameraEnabled && HighLogic.LoadedSceneIsFlight)
             {
                 if (cameras == null || cameras[0] == null)
                 {

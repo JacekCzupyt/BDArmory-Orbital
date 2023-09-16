@@ -28,6 +28,9 @@ namespace BDArmory.Weapons.Missiles
         public string homingType = "AAM";
 
         [KSPField]
+        public float guidanceDelay = -1;
+
+        [KSPField]
         public float pronavGain = 3f;
 
         [KSPField]
@@ -1059,7 +1062,6 @@ namespace BDArmory.Weapons.Missiles
             if (SourceVessel == null)
             {
                 SourceVessel = vessel;
-                if (BDArmorySettings.DEBUG_MISSILES && !multiLauncher) shortName = $"{SourceVessel.GetName()}'s {GetShortName()}";
             }
             if (multiLauncher && multiLauncher.isMultiLauncher)
             {
@@ -1081,7 +1083,6 @@ namespace BDArmory.Weapons.Missiles
                     TimeFired = Time.time;
                     part.decouple(0);
                     part.Unpack();
-                    vessel.vesselName = GetShortName();
                     TargetPosition = (multiLauncher ? vessel.ReferenceTransform.position + vessel.ReferenceTransform.up * 5000 : transform.position + transform.forward * 5000); //set initial target position so if no target update, missileBase will count a miss if it nears this point or is flying post-thrust
                     MissileLaunch();
                     BDATargetManager.FiredMissiles.Add(this);
@@ -1117,8 +1118,6 @@ namespace BDArmory.Weapons.Missiles
             ml.GuidanceMode = GuidanceMode;
             //wpm.SendTargetDataToMissile(ml);
             ml.TimeFired = Time.time;
-            if (BDArmorySettings.DEBUG_MISSILES) shortName = $"{SourceVessel.GetName()}'s {GetShortName()}";
-            ml.vessel.vesselName = GetShortName();
             ml.DetonationDistance = DetonationDistance;
             ml.DetonateAtMinimumDistance = DetonateAtMinimumDistance;
             ml.dropTime = dropTime;
@@ -1264,7 +1263,8 @@ namespace BDArmory.Weapons.Missiles
                 //add target info to vessel
                 AddTargetInfoToVessel();
                 StartCoroutine(DecoupleRoutine());
-
+                if (BDArmorySettings.DEBUG_MISSILES) shortName = $"{SourceVessel.GetName()}'s {GetShortName()}";
+                vessel.vesselName = GetShortName();
                 vessel.vesselType = VesselType.Probe;
                 //setting ref transform for navball
                 GameObject refObject = new GameObject();
@@ -1622,7 +1622,7 @@ namespace BDArmory.Weapons.Missiles
 
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) debugString.AppendLine($"controlAuthority: {controlAuthority}");
 
-                if (guidanceActive)// && timeIndex - dropTime > 0.5f)
+                if (guidanceActive && TimeIndex - dropTime > guidanceDelay)
                 {
                     WarnTarget();
 

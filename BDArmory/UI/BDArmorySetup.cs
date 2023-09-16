@@ -2524,6 +2524,8 @@ namespace BDArmory.UI
                         //     PROF_n = Mathf.RoundToInt(Mathf.Pow(10, PROF_n_pow));
                         // }
 
+                        // if (GUI.Button(SLineRect(++line), "Test Order of Operations"))
+                        //     TestOrderOfOperations();
                         // if (GUI.Button(SLineRect(++line), "Test GetMass vs Size performance"))
                         //     TestMassVsSizePerformance();
                         // if (GUI.Button(SLineRect(++line), "Test DotNorm performance"))
@@ -4357,6 +4359,30 @@ namespace BDArmory.UI
                 clip = SoundUtils.GetAudioClip("BDArmory/Sounds/deployClick");
             dt = Time.realtimeSinceStartup - tic;
             Debug.Log($"DEBUG GetAudioClip took {dt / N:G3}s");
+        }
+
+        public static void TestOrderOfOperations()
+        {
+            var watch = new System.Diagnostics.Stopwatch();
+            float µsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+            Debug.Log($"DEBUG Clock resolution: {µsResolution}µs, {PROF_N} outer loops, {PROF_n} inner loops");
+            float x = UnityEngine.Random.Range(-1f, 1f);
+            Vector3 X = UnityEngine.Random.insideUnitSphere;
+            Vector3 result = default;
+            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { result = x*X; } };
+            Debug.Log($"DEBUG x*X took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { result = X*x; } };
+            Debug.Log($"DEBUG X*x took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { result = x*x*X; } };
+            Debug.Log($"DEBUG x*x*X took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { result = X*x*x; } };
+            Debug.Log($"DEBUG X*x*x took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { result = x*X*x; } };
+            Debug.Log($"DEBUG x*X*x took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { result = x*x*x*X; } };
+            Debug.Log($"DEBUG x*x*x*X took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { result = X*x*x*x; } };
+            Debug.Log($"DEBUG X*x*x*x took {ProfileFunc(func, PROF_N) / PROF_n:G3}µs");
         }
 
         public static void TestMassVsSizePerformance()

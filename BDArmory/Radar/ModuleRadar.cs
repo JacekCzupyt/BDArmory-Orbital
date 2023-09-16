@@ -31,6 +31,10 @@ namespace BDArmory.Radar
         public string rotationTransformName = string.Empty;
         Transform rotationTransform;
 
+        [KSPField]
+        public string radarTransformName = string.Empty;
+        Transform radarTransform;
+
         #endregion General Configuration
 
         #region Radar Capabilities
@@ -425,6 +429,7 @@ namespace BDArmory.Radar
                 {
                     rotationTransform = part.FindModelTransform(rotationTransformName);
                 }
+                radarTransform = radarTransformName != string.Empty ? part.FindModelTransform(radarTransformName) : part.transform;
 
                 attemptedLocks = new TargetSignatureData[3];
                 TargetSignatureData.ResetTSDArray(ref attemptedLocks);
@@ -561,13 +566,13 @@ namespace BDArmory.Radar
                     {
                         referenceTransform.position = part.transform.position;
                         referenceTransform.rotation =
-                            Quaternion.LookRotation(VectorUtils.GetNorthVector(transform.position, vessel.mainBody),
+                            Quaternion.LookRotation(VectorUtils.GetNorthVector(radarTransform.position, vessel.mainBody),
                                 VectorUtils.GetUpDirection(transform.position));
                     }
                     else
                     {
                         referenceTransform.position = part.transform.position;
-                        referenceTransform.rotation = Quaternion.LookRotation(part.transform.up,
+                        referenceTransform.rotation = Quaternion.LookRotation(radarTransform.up,
                             VectorUtils.GetUpDirection(referenceTransform.position));
                     }
                     //UpdateInputs();

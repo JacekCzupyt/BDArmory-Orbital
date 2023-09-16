@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System;
 using UnityEngine;
-using KSP.Localization;
 
 using BDArmory.Competition;
 using BDArmory.CounterMeasure;
@@ -473,7 +472,7 @@ namespace BDArmory.Control
                     if (weaponCandidate == null || !recentlyFiringWeaponClasses.Contains(weaponCandidate.GetWeaponClass())) continue;
                     var weapon = (ModuleWeapon)weaponCandidate;
                     if (weapon == null) continue;
-                    if (Time.time - weapon.timeFired < BDArmorySettings.CAMERA_SWITCH_FREQUENCY / 2f) return true; // Fired a gun recently.
+                    if (weapon.timeSinceFired < BDArmorySettings.CAMERA_SWITCH_FREQUENCY / 2f) return true; // Fired a gun recently.
                 }
                 return false;
             }
@@ -6249,7 +6248,7 @@ namespace BDArmory.Control
                         if (laserPointDetected)
                         {
                             ml.lockedCamera = foundCam;
-                            if ((foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude < 10 * 10) validTarget = true;
+                            if (guardMode && guardTarget != null && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude < 10 * 10) validTarget = true;
                         }
                         else
                         {
@@ -6264,7 +6263,7 @@ namespace BDArmory.Control
                         {
                             ml.targetGPSCoords = designatedGPSCoords;
                             ml.TargetAcquired = true;
-                            if (GPSDistanceCheck()) validTarget = true;
+                            if (guardMode && GPSDistanceCheck()) validTarget = true;
                         }
                         break;
                     }
