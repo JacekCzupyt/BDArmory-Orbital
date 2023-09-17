@@ -4019,7 +4019,7 @@ namespace BDArmory.Weapons
             Vector3 lastPosition, lastTargetPosition;
             
             // fixedDeltaTime accounts for the skipped iTime frame, elapsedTime is necessary, because function is recursive
-            var gravity = targetIsLandedOrSplashed ? default : FlightGlobals.getGeeForceAtPosition(position + BDKrakensbane.FrameVelocityV3f * (elapsedTime + Time.fixedDeltaTime));
+            var gravity = FlightGlobals.getGeeForceAtPosition(position + BDKrakensbane.FrameVelocityV3f * (elapsedTime + Time.fixedDeltaTime));
             velocity += 0.5f * timeStep * gravity;
             
             // Landed or splashed targets aren't affected by gravity due to contact forces.
