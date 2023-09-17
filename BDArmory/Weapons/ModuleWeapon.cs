@@ -3580,7 +3580,7 @@ namespace BDArmory.Weapons
                         // finalTarget = firePosition + AIUtils.PredictPosition(targetPosition - firePosition, targetVelocity - part.rb.velocity, targetAcceleration, timeToCPA);
                         // finalTarget = fireTransforms[0].position + AIUtils.PredictPosition(targetPosition - firePosition, targetVelocity - part.rb.velocity, targetAcceleration, timeToCPA);
                         firingDirection = (finalTarget - fireTransforms[0].position).normalized;
-                    } while (++count < 10 && Vector3.Angle(lastFiringDirection, firingDirection) > 1f); // 1° margin of error is sufficient to prevent premature firing (usually)
+                    } while (++count < 10 && (lastFiringDirection - firingDirection).magnitude > 1 / (10 * bulletVelocity * timeToCPA)); // This is roughly equivalent to a max 10cm error, Vector3.Angle is too inaccurate, it shows an angle of 0 for a 1m offset at a 10km range
                     targetDistance = Vector3.Distance(finalTarget, bulletInitialPosition);
                     
                     if (BDArmorySettings.DEBUG_SETTINGS_TOGGLE) Debug.Log($"DEBUG Δt: {timeToCPA}, Δx: {relativePosition.magnitude}, Δv: {relativeVelocity.magnitude}, Δa: {relativeAcceleration.magnitude}, V: {partVelocity.magnitude}, ΔV: {(partVelocity - targetVelocity).magnitude}, kV: {BDKrakensbane.FrameVelocityV3f.magnitude}, count: {count}, Δangle: {(firingDirection - lastFiringDirection).magnitude}, ΔFD: {(firingDirection - previousFiringDirection).magnitude}, ΔP: {(finalTarget - (firePosition + AIUtils.PredictPosition(targetPosition - firePosition, targetVelocity - part.rb.velocity, targetAcceleration, timeToCPA + Time.fixedDeltaTime))).magnitude}");
