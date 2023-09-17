@@ -3512,20 +3512,19 @@ namespace BDArmory.Weapons
                 Vector3 originalTarget = targetPosition;
                 if (!manualAiming)
                 {
+                    // If orbital drift compensation option is turned on, the errors from gravitational acceleration are corrected by KPS
+                    // TODO: how to check ORBITAL_DRIFT_COMPENSATION state?
+                    bool ORBITAL_DRIFT_COMPENSATION = false;
+                    
                     // Correct for the FI, which hasn't run yet, but does before visuals are next shown. This should synchronise the target's position and velocity with the bullet at the start of the next frame.
-                    // Move the target by one frame to account for bullet iTime
-                    targetVelocity += targetAcceleration * Time.fixedDeltaTime;
+                    // This method mimics unity's physics integrator, using semi-implicit euler and correcting for orbital drift compensation
+                    targetVelocity += (targetAcceleration - (ORBITAL_DRIFT_COMPENSATION ? 0.5f * FlightGlobals.getGeeForceAtPosition(targetPosition) : default)) * Time.fixedDeltaTime;
                     targetPosition += targetVelocity * Time.fixedDeltaTime;
                     
                     // Correct for unity integration system
                     // Unity uses semi-implicit euler method during fixed updates. This means the velocity is updated first, and then position.
                     // This creates consistent errors that the following velocity offset compensates for.
-                    targetVelocity += 0.5f * (targetAcceleration - FlightGlobals.getGeeForceAtPosition(targetPosition)) * Time.fixedDeltaTime;
-                    
-                    // If orbital drift compensation option is turned on, the errors from gravitational acceleration are corrected by KPS
-                    // TODO: how to check ORBITAL_DRIFT_COMPENSATION state?
-                    // if (!ORBITAL_DRIFT_COMPENSATION)
-                    //     targetVelocity += 0.5f * FlightGlobals.getGeeForceAtPosition(targetPosition) * Time.fixedDeltaTime;
+                    targetVelocity += 0.5f * targetAcceleration * Time.fixedDeltaTime;
                 }
                 
                 targetDistance = Vector3.Distance(targetPosition, fireTransform.parent.position);
@@ -3562,7 +3561,7 @@ namespace BDArmory.Weapons
                         lastFiringDirection = firingDirection;
                         
                         // Get initial bullet state, bullets are initially placed up to 1 frame ahead (iTime).
-                        bulletEffectiveVelocity = part.rb.velocity + baseBulletVelocity * firingDirection;
+                        bulletEffectiveVelocity = partVelocity + baseBulletVelocity * firingDirection;
                         bulletInitialPosition = firePosition + iTime * baseBulletVelocity * firingDirection;
                         
                         // Get relative position, velocity, acceleration
@@ -3577,14 +3576,14 @@ namespace BDArmory.Weapons
                         
                         // Modify firing direction to point at target predicted position
                         bulletDropOffset = -0.5f * timeToCPA * timeToCPA * bulletAcceleration;
-                        finalTarget = targetPredictedPosition + bulletDropOffset - (timeToCPA + Time.fixedDeltaTime) * part.rb.velocity; // We need to add Time.fixedDeltaTime to account for the initial frame we are skipping (iTime)
+                        finalTarget = targetPredictedPosition + bulletDropOffset - (timeToCPA + Time.fixedDeltaTime) * partVelocity; // We need to add Time.fixedDeltaTime to account for the initial frame we are skipping (iTime)
                         // finalTarget = firePosition + AIUtils.PredictPosition(targetPosition - firePosition, targetVelocity - part.rb.velocity, targetAcceleration, timeToCPA);
                         // finalTarget = fireTransforms[0].position + AIUtils.PredictPosition(targetPosition - firePosition, targetVelocity - part.rb.velocity, targetAcceleration, timeToCPA);
                         firingDirection = (finalTarget - fireTransforms[0].position).normalized;
                     } while (++count < 10 && Vector3.Angle(lastFiringDirection, firingDirection) > 1f); // 1° margin of error is sufficient to prevent premature firing (usually)
                     targetDistance = Vector3.Distance(finalTarget, bulletInitialPosition);
                     
-                    if (BDArmorySettings.DEBUG_SETTINGS_TOGGLE) Debug.Log($"DEBUG Δt: {timeToCPA}, Δx: {relativePosition.magnitude}, Δv: {relativeVelocity.magnitude}, Δa: {relativeAcceleration.magnitude}, V: {part.rb.velocity.magnitude}, ΔV: {(part.rb.velocity - targetVelocity).magnitude}, kV: {BDKrakensbane.FrameVelocityV3f.magnitude}, count: {count}, Δangle: {(firingDirection - lastFiringDirection).magnitude}, ΔFD: {(firingDirection - previousFiringDirection).magnitude}, {(finalTarget - (firePosition + AIUtils.PredictPosition(targetPosition - firePosition, targetVelocity - part.rb.velocity, targetAcceleration, timeToCPA + Time.fixedDeltaTime))).magnitude}");
+                    if (BDArmorySettings.DEBUG_SETTINGS_TOGGLE) Debug.Log($"DEBUG Δt: {timeToCPA}, Δx: {relativePosition.magnitude}, Δv: {relativeVelocity.magnitude}, Δa: {relativeAcceleration.magnitude}, V: {partVelocity.magnitude}, ΔV: {(partVelocity - targetVelocity).magnitude}, kV: {BDKrakensbane.FrameVelocityV3f.magnitude}, count: {count}, Δangle: {(firingDirection - lastFiringDirection).magnitude}, ΔFD: {(firingDirection - previousFiringDirection).magnitude}, ΔP: {(finalTarget - (firePosition + AIUtils.PredictPosition(targetPosition - firePosition, targetVelocity - part.rb.velocity, targetAcceleration, timeToCPA + Time.fixedDeltaTime))).magnitude}");
                     previousFiringDirection = firingDirection;
                     
                     // var gravityDifferential = FlightGlobals.getGeeForceAtPosition(finalTarget + timeToCPA * BDKrakensbane.FrameVelocityV3f) - FlightGlobals.getGeeForceAtPosition(firePosition);
