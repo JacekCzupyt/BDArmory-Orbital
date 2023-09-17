@@ -496,6 +496,7 @@ namespace BDArmory.Damage
             }
             //if attachnode top != bottom, then cone. is nodesize Attachnode.radius or Attachnode.size?
             //getSize returns size of a rectangular prism; most parts are circular, some are conical; use sizeAdjust to compensate
+            partSize = CalcPartBounds(this.part, this.transform).size;
             if (bottom != null && top != null) //cylinder
             {
                 sizeAdjust = 0.783f;
@@ -505,10 +506,21 @@ namespace BDArmory.Damage
                 sizeAdjust = 0.422f;
             }
             else //no bottom or top nodes, assume srf attached part; these are usually panels of some sort. Will need to determine method of ID'ing triangular panels/wings
-            {                                                                                               //Wings at least could use WingLiftArea as a workaround for approx. surface area...
+            {
+                //Wings at least could use WingLiftArea as a workaround for approx. surface area...
+                if (part.IsAero())
+                {
+                    if (!isProcWing) //procWings handled elsewhere
+                    {
+                        if ((float)part.Modules.GetModule<ModuleLiftingSurface>().deflectionLiftCoeff < (Mathf.Max(partSize.x, partSize.y) * Mathf.Max (partSize.y, partSize.z) / 3.52f)) 
+                        {
+                            sizeAdjust = 0.5f; //wing is triangular
+                        }
+                    }
+                }
+                else
                 sizeAdjust = 0.5f; //armor on one side, otherwise will have armor thickness on both sides of the panel, nonsensical + double weight
             }
-            partSize = CalcPartBounds(this.part, this.transform).size;
             if (armorVolume < 0 || HighLogic.LoadedSceneIsEditor && isProcPart) //make this persistant to get around diffeences in part bounds between SPH/Flight. Also reset if in editor and a procpart to account for resizing
             {
                 armorVolume =  // thickness * armor mass; moving it to Start since it only needs to be calc'd once
@@ -1191,11 +1203,14 @@ namespace BDArmory.Damage
             {
                 if (part.IsAero())
                 {
-                    maxSupportedArmor = 20;
+                    if (isProcWing) 
+                        maxSupportedArmor = ProceduralWing.getPwingThickness(part);
+                    else
+                        maxSupportedArmor = 20;
                 }
                 else
                 {
-                    maxSupportedArmor = ((partSize.x / 20) * 1000); //~62mm for Size1, 125mm for S2, 185mm for S3
+                    maxSupportedArmor = ((Mathf.Min(partSize.x, partSize.y, partSize.z) / 20) * 1000); //~62mm for Size1, 125mm for S2, 185mm for S3
                     maxSupportedArmor /= 5;
                     maxSupportedArmor = Mathf.Round(maxSupportedArmor);
                     maxSupportedArmor *= 5;
@@ -1406,6 +1421,8 @@ namespace BDArmory.Damage
                 Fields["armorCost"].guiActiveEditor = true;
                 Fields["armorMass"].guiActiveEditor = true;
                 UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields["Armor"].uiControlEditor;
+                if (isProcWing)
+                    maxSupportedArmor = ProceduralWing.getPwingThickness(part);
                 if (armorFieldEditor.maxValue != maxSupportedArmor)
                 {
                     armorReset = false;

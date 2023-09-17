@@ -669,7 +669,11 @@ namespace BDArmory.Weapons.Missiles
                 DrawDebugLine(lookRay.origin, lookRay.origin + lookRay.direction * 10000, Color.magenta);
 
                 // Update heat target
-                heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel);
+                if (activeRadarRange < 0)
+                    heatTarget = BDATargetManager.GetAcousticTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, lockedSensorFOVBias, lockedSensorVelocityBias,
+                        (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel);
+                else
+                    heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel);
 
                 if (heatTarget.exists)
                 {
@@ -806,12 +810,12 @@ namespace BDArmory.Weapons.Missiles
                             hasLostLock = false;
                             radarTarget = t;
                             hasLostLock = false;
-                            if (weaponClass == WeaponClasses.SLW)
-                            {
-                                TargetPosition = radarTarget.predictedPosition;
-                            }
-                            else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
+                            //if (weaponClass == WeaponClasses.SLW) //Radar/Active Sonar guidance would be vulnerable to chaff/various acoustic CMs that function basically like chaff, so commenting this out
+                            //{
+                            //    TargetPosition = radarTarget.predictedPosition;
+                            //}
+                            //else
+                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             _radarFailTimer = 0;
@@ -836,11 +840,9 @@ namespace BDArmory.Weapons.Missiles
                                 _radarFailTimer += Time.fixedDeltaTime;
                                 radarTarget.timeAcquired = Time.time;
                                 radarTarget.position = radarTarget.predictedPosition;
-                                if (weaponClass == WeaponClasses.SLW)
-                                {
-                                    TargetPosition = radarTarget.predictedPosition;
-                                }
-                                else
+                                //if (weaponClass == WeaponClasses.SLW)
+                                //    TargetPosition = radarTarget.predictedPosition;
+                                //else
                                     TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
                                 TargetVelocity = radarTarget.velocity;
                                 TargetAcceleration = Vector3.zero;
@@ -906,11 +908,9 @@ namespace BDArmory.Weapons.Missiles
                                         radarTarget = scannedTargets[i];
                                         TargetAcquired = true;
                                         radarLOALSearching = false;
-                                        if (weaponClass == WeaponClasses.SLW)
-                                        {
-                                            TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
-                                        }
-                                        else
+                                        //if (weaponClass == WeaponClasses.SLW)
+                                        //    TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
+                                        //else
                                             TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
 
                                         TargetVelocity = radarTarget.velocity;
@@ -948,11 +948,9 @@ namespace BDArmory.Weapons.Missiles
                         {
                             radarLOALSearching = true;
                             TargetAcquired = true;
-                            if (weaponClass == WeaponClasses.SLW)
-                            {
-                                TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
-                            }
-                            else
+                            //if (weaponClass == WeaponClasses.SLW)
+                            //    TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
+                            //else
                                 TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
 
                             TargetVelocity = radarTarget.velocity;
@@ -1026,11 +1024,9 @@ namespace BDArmory.Weapons.Missiles
                     radarTarget = lockedTarget;
                     TargetAcquired = true;
                     radarLOALSearching = false;
-                    if (weaponClass == WeaponClasses.SLW)
-                    {
-                        TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
-                    }
-                    else
+                    //if (weaponClass == WeaponClasses.SLW)
+                    //    TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
+                    //else
                         TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
                     TargetVelocity = radarTarget.velocity;
                     TargetAcceleration = radarTarget.acceleration;

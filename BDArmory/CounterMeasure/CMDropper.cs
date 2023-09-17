@@ -16,12 +16,14 @@ namespace BDArmory.CounterMeasure
         public static ObjectPool flarePool;
         public static ObjectPool chaffPool;
         public static ObjectPool smokePool;
+        public static ObjectPool decoyPool;
 
         public enum CountermeasureTypes
         {
             Flare = 1 << 0,
             Chaff = 1 << 1,
-            Smoke = 1 << 2
+            Smoke = 1 << 2,
+            Decoy = 1 << 3
         }
 
         public CountermeasureTypes cmType = CountermeasureTypes.Flare;
@@ -70,6 +72,9 @@ namespace BDArmory.CounterMeasure
 
                 case CountermeasureTypes.Smoke:
                     return PopSmoke();
+
+                case CountermeasureTypes.Decoy:
+                    return LaunchDecoy();
             }
             return false;
         }
@@ -184,6 +189,10 @@ namespace BDArmory.CounterMeasure
                 case "smoke":
                     cmType = CountermeasureTypes.Smoke;
                     break;
+
+                case "decoy":
+                    cmType = CountermeasureTypes.Decoy;
+                    break;
             }
         }
 
@@ -226,6 +235,16 @@ namespace BDArmory.CounterMeasure
                     {
                         SetupSmokePool();
                     }
+                    break;
+
+                case "decoy":
+                    cmType = CountermeasureTypes.Decoy;
+                    cmSound = SoundUtils.GetAudioClip("BDArmory/Sounds/decoySound");
+                    if (!decoyPool)
+                    {
+                        SetupDecoyPool();
+                    }
+                    resourceName = "CMDecoy";
                     break;
             }
         }
@@ -318,6 +337,30 @@ namespace BDArmory.CounterMeasure
             smokeCMObject.SetActive(false);
         }
 
+        bool LaunchDecoy()
+        {
+            PartResource cmResource = GetCMResource();
+            if (cmResource == null || !(cmResource.amount >= 1)) return false;
+            cmResource.amount--;
+            audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
+            audioSource.PlayOneShot(cmSound);
+
+            GameObject cm = decoyPool.GetPooledObject();
+            cm.transform.position = transform.position;
+            CMDecoy cmd = cm.GetComponent<CMDecoy>();
+            cmd.velocity = part.rb.velocity
+                + BDKrakensbane.FrameVelocityV3f
+                + (ejectVelocity * transform.up)
+                + (UnityEngine.Random.Range(-3f, 3f) * transform.forward)
+                + (UnityEngine.Random.Range(-3f, 3f) * transform.right);
+            cmd.SetAcoustics(vessel);
+
+            cm.SetActive(true);
+
+            FireParticleEffects();
+            return true;
+        }
+
         void SetupFlarePool()
         {
             GameObject cm = GameDatabase.Instance.GetModel("BDArmory/Models/CMFlare/model");
@@ -340,6 +383,14 @@ namespace BDArmory.CounterMeasure
             cm.SetActive(false);
             cm.AddComponent<CMChaff>();
             chaffPool = ObjectPool.CreateObjectPool(cm, 10, true, true);
+        }
+
+        void SetupDecoyPool()
+        {
+            GameObject cm = GameDatabase.Instance.GetModel("BDArmory/Models/CMDecoy/model");
+            cm.SetActive(false);
+            cm.AddComponent<CMDecoy>();
+            decoyPool = ObjectPool.CreateObjectPool(cm, 10, true, true);
         }
 
         // RMB info in editor

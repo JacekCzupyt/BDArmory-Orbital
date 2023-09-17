@@ -128,7 +128,7 @@ namespace BDArmory.Utils
                     filemissiles.WriteLine(
                         item.name + ";" + item.title + ";" + item.author + ";" + item.manufacturer + ";" + item.partPrefab.mass + ";" + item.cost + ";" + item.partPrefab.crashTolerance + ";" + item.partPrefab.maxTemp + ";" +
                                     missile.thrust + ";" + missile.boostTime + ";" + missile.cruiseThrust + ";" + missile.cruiseTime + ";" + missile.maxTurnRateDPS + ";" + missile.blastPower + ";" + missile.blastHeat + ";" + missile.blastRadius + ";" + missile.guidanceActive + ";" + missile.homingType + ";" + missile.targetingType + ";" + missile.minLaunchSpeed + ";" + missile.minStaticLaunchRange + ";" + missile.maxStaticLaunchRange + ";" + missile.optimumAirspeed + ";" +
-                                    missile.terminalManeuvering + ";" + missile.terminalGuidanceType + ";" + missile.terminalGuidanceDistance + ";" +
+                                    missile.terminalGuidanceShouldActivate + ";" + missile.terminalGuidanceType + ";" + missile.terminalGuidanceDistance + ";" +
                                     missile.activeRadarRange + ";" + missile.radarLOAL + ";" +
                                     missile.maxOffBoresight + ";" + missile.lockedSensorFOV + ";" +
                                     missile.heatThreshold + ";" +

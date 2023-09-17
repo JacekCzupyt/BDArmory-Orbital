@@ -96,6 +96,25 @@ namespace BDArmory.Targeting
             IRSource = null;
         }
 
+        public TargetSignatureData(CMDecoy decoy, float _signalStrength)
+        {
+            velocity = decoy.velocity;
+            geoPos = VectorUtils.WorldPositionToGeoCoords(decoy.transform.position, FlightGlobals.currentMainBody);
+            exists = true;
+            acceleration = Vector3.zero;
+            timeAcquired = Time.time;
+            signalStrength = _signalStrength;
+            targetInfo = null;
+            vesselJammer = null;
+            Team = null;
+            pingPosition = Vector2.zero;
+            orbital = false;
+            orbit = null;
+            lockedByRadar = null;
+            vessel = null;
+            IRSource = null;
+        }
+
         public TargetSignatureData(Vector3 _velocity, Vector3 _position, Vector3 _acceleration, bool _exists, float _signalStrength)
         {
             velocity = _velocity;

@@ -1,20 +1,47 @@
 ﻿IMPROVEMENTS / FIXES
-- UI:
-	- Add Japanese localization files thanks to user Taka005.
+-General:
+	- Procedural Wing max armor thickness now based on mean thickness of the wing.
+	- Adds new Acoustic Decoy CM dropper.
+-Radar:
+	- Add new radarTransformName field to ModuleRadar/new irstTransformName field to ModuleIRST to allow setting custom radar direction/setting multiple radars to a part using custom radar models.
+	- Add new sonarType field to Radar for setting up Active or Passive sonars.
 - AI / WM:
 	- Fix the cubic solver giving invalid results for nearly degenerate cubics (used in aiming).
 	- Fix the debug line trajectories not showing the final part of the trajectory.
-- Radar:
-	- Add new radarTransformName field to ModuleRadar to allow setting custom radar direction/setting multiple radars to a part using custom radar models.
+	- Add experimental Submarine AI option to Surface Driver AI.
+	- Various weapon selection logic tweaks to support sensible weapon selection/use when submerged and firing on non-submerged targets.
+	- Add torpedo bombing logic to pilot AI.
+	- AI will now lead moving ground targets when bombing.
+	- AI will start dropping bombs from reloadable rails/bomblet dispensers early for proper carpet bombing instead of dropping them behind a target.
+	- Fix AI dropping bombs several hundred meters behind target.
+- UI:
+	- Add Japanese localization files thanks to user Taka005.
+- Competition:
+	- Add new GM Kill conditions for planes that have lost engines/weapons/set percentage of their parts and LandedKillTimer conditions for surface AIs that have found themselves in water/water AIs that have beached themselves/sunk.
+- Countermeasures:
+	- Add Acoustic Decoy CM support via 'countermeasureType = decoy'.
+	- APS point defense target acquisition and assignment logic rewritten, APS will now semi-intelligently identify and distribute targets among guns in the PD network.
+	- APS weapons now respect Fire Interval and Burst Length settings.
 - Vessel Mover:
 	- Make the vessel selection more resilient to corrupted vessel files/loadmeta.
 	- Default the vessel selection window to using the VAB if the initial vessel is spawned through the launchpad.
 - Weapons:
 	- Missiles:
 		- Fix some NREs when manually firing missiles.
-    - Add new guidanceDelay field to allow setting a delay between missile launch and missile beginning to maneuver towards a target.
-		- Dynamic Launch Range now uses missile EngageRange max instead of static launch range
+		- Add new guidanceDelay field to allow setting a delay between missile launch and missile beginning to maneuver towards a target.
+		- Dynamic Launch Range now uses missile EngageRange max instead of static launch range.
 		- Improved launch behavior for missiles set to be fired at very short range.
+		- Add LineOfSight check when firing missiles.
+		- Fix torpedoes not working.
+		- Missile/Bomb fratricide prevention now based on team instead of sourcevessel.
+		- Add Salvo size slider to MultiMissile Launchers, enabled via the new MultiMissileLauncher .cfg 'setSalvoSize' bool.
+		- Improve launch of missiles from reloadable rails.
+		- Add new MultiMissileLauncher 'deploySpeed' field to set deploy animation duration.
+		- Add intrinsic scaling option to MultiMissileLauncher for missile pods and the like, use new fields 'scaleTransformName' and 'lengthTransformName'
+		- Fix issue with air-dropped torpedoes exploding on impact with the water despite being within their waterImpactTolearance.
+		- Fix torpedo behavior if trying to target something with a CoM above water level
+		- Tweaked weapon lead aim calcs for guns firing beehive shells, Oerlikon should hit more often now.
+		- MultiMissileLaunchers can now support GPS guided missiles launching at multiple simultaneous targets. 
 
 v1.6.5.0
 IMPROVEMENTS / FIXES

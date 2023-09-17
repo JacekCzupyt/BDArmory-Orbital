@@ -114,6 +114,10 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float COMPETITION_ALTITUDE_LIMIT_HIGH = 55;         // Altitude (high) in km at which to kill off craft.
         [BDAPersistentSettingsField] public static float COMPETITION_ALTITUDE_LIMIT_LOW = -39;          // Altitude (low) in km at which to kill off craft.
         [BDAPersistentSettingsField] public static bool COMPETITION_ALTITUDE__LIMIT_ASL = false;       // Does Killer GM use ASL or AGL for latitide ceiling/floor?
+        [BDAPersistentSettingsField] public static bool COMPETITION_GM_KILL_WEAPON = false;             // Competition GM will kill weaponless craft?
+        [BDAPersistentSettingsField] public static bool COMPETITION_GM_KILL_ENGINE = false;             // Competition GM will kill engineless craft?
+        [BDAPersistentSettingsField] public static float COMPETITION_GM_KILL_HP = 0;                    // Competition GM will kill craft with low HP craft?
+        [BDAPersistentSettingsField] public static float COMPETITION_GM_KILL_TIME = 0;                  // CompetitionGM Kill time
         [BDAPersistentSettingsField] public static float COMPETITION_NONCOMPETITOR_REMOVAL_DELAY = 30; // Competition non-competitor removal delay in seconds.
         [BDAPersistentSettingsField] public static float COMPETITION_WAYPOINTS_GM_KILL_PERIOD = 60;    // Waypoint Competition GM kill period in seconds. Craft that don't pass a waypoint within this time are killed off.
         [BDAPersistentSettingsField] public static float COMPETITION_DISTANCE = 1000;                  // Competition distance.

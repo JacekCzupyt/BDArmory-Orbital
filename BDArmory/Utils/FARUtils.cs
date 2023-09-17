@@ -361,5 +361,18 @@ namespace BDArmory.Utils
             }
             return -1;
         }
+        public static float getPwingThickness(Part part)
+        {
+            if (!hasPwingModule) return 20;
+            foreach (var module in part.Modules)
+            {
+                if (module.GetType() == PWType)
+                {
+                    float thickness = ((float)PWType.GetField("sharedBaseThicknessRoot", BindingFlags.Public | BindingFlags.Instance).GetValue(module) + (float)PWType.GetField("sharedBaseThicknessTip", BindingFlags.Public | BindingFlags.Instance).GetValue(module)) / 2;
+                    return Mathf.Max(thickness, 0.2f) * 100;
+                }
+            }
+            return 20;
+        }
     }
 }

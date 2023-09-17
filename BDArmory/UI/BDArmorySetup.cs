@@ -157,6 +157,7 @@ namespace BDArmory.UI
         float physRangeTimer;
 
         public static List<CMFlare> Flares = new List<CMFlare>();
+        public static List<CMDecoy> Decoys = new List<CMDecoy>();
 
         public List<string> mutators = new List<string>();
         bool[] mutators_selected;
@@ -2951,7 +2952,7 @@ namespace BDArmory.UI
                     if (BDArmorySettings.AUTO_RESUME_TOURNAMENT)
                     {
                         BDArmorySettings.AUTO_QUIT_AT_END_OF_TOURNAMENT = GUI.Toggle(SRightRect(line), BDArmorySettings.AUTO_QUIT_AT_END_OF_TOURNAMENT, StringUtils.Localize("#LOC_BDArmory_Settings_AutoQuitAtEndOfTournament")); // Auto Quit At End Of Tournament
-                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_AutoQuitMemoryUsage")}:  ({(BDArmorySettings.QUIT_MEMORY_USAGE_THRESHOLD > SystemMaxMemory ? "Off" : $"{BDArmorySettings.QUIT_MEMORY_USAGE_THRESHOLD}GB")})", leftLabel); // Auto-Quit Memory Threshold
+                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_AutoQuitMemoryUsage")}:  ({(BDArmorySettings.QUIT_MEMORY_USAGE_THRESHOLD > SystemMaxMemory ? StringUtils.Localize("#LOC_BDArmory_Generic_Off") : $"{BDArmorySettings.QUIT_MEMORY_USAGE_THRESHOLD}GB")})", leftLabel); // Auto-Quit Memory Threshold
                         BDArmorySettings.QUIT_MEMORY_USAGE_THRESHOLD = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.QUIT_MEMORY_USAGE_THRESHOLD, 1f, SystemMaxMemory + 1));
                         if (BDArmorySettings.QUIT_MEMORY_USAGE_THRESHOLD <= SystemMaxMemory)
                         {
@@ -3707,7 +3708,7 @@ namespace BDArmory.UI
                     GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_DebrisCleanUpDelay")}:  ({BDArmorySettings.DEBRIS_CLEANUP_DELAY}s)", leftLabel); // Debris Clean-up delay
                     BDArmorySettings.DEBRIS_CLEANUP_DELAY = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.DEBRIS_CLEANUP_DELAY, 1f, 60f));
 
-                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionNonCompetitorRemovalDelay")}:  ({(BDArmorySettings.COMPETITION_NONCOMPETITOR_REMOVAL_DELAY > 60 ? "Off" : BDArmorySettings.COMPETITION_NONCOMPETITOR_REMOVAL_DELAY + "s")})", leftLabel); // Non-competitor removal frequency
+                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionNonCompetitorRemovalDelay")}:  ({(BDArmorySettings.COMPETITION_NONCOMPETITOR_REMOVAL_DELAY > 60 ? StringUtils.Localize("#LOC_BDArmory_Generic_Off") : BDArmorySettings.COMPETITION_NONCOMPETITOR_REMOVAL_DELAY + "s")})", leftLabel); // Non-competitor removal frequency
                     BDArmorySettings.COMPETITION_NONCOMPETITOR_REMOVAL_DELAY = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_NONCOMPETITOR_REMOVAL_DELAY, 1f, 61f));
                 }
                 GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionDuration")}: ({(BDArmorySettings.COMPETITION_DURATION > 0 ? BDArmorySettings.COMPETITION_DURATION + (BDArmorySettings.COMPETITION_DURATION > 1 ? " mins" : " min") : "Unlimited")})", leftLabel);
@@ -3724,7 +3725,7 @@ namespace BDArmory.UI
                     string startNowAfter;
                     if (BDArmorySettings.COMPETITION_START_NOW_AFTER > 10)
                     {
-                        startNowAfter = "Off";
+                        startNowAfter = StringUtils.Localize("#LOC_BDArmory_Generic_Off");
                     }
                     else if (BDArmorySettings.COMPETITION_START_NOW_AFTER > 5)
                     {
@@ -3738,7 +3739,7 @@ namespace BDArmory.UI
                     BDArmorySettings.COMPETITION_START_NOW_AFTER = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_START_NOW_AFTER, 0f, 11f));
                 }
 
-                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionKillTimer")}: (" + (BDArmorySettings.COMPETITION_KILL_TIMER > 0 ? (BDArmorySettings.COMPETITION_KILL_TIMER + "s") : "Off") + ")", leftLabel); // FIXME the toggle and this slider could be merged
+                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionKillTimer")}: (" + (BDArmorySettings.COMPETITION_KILL_TIMER > 0 ? (BDArmorySettings.COMPETITION_KILL_TIMER + "s") : StringUtils.Localize("#LOC_BDArmory_Generic_Off")) + ")", leftLabel); // FIXME the toggle and this slider could be merged
                 BDArmorySettings.COMPETITION_KILL_TIMER = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_KILL_TIMER, 0, 60f));
 
                 GUI.Label(SLeftRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionIntraTeamSeparation")); // Intra-team separation.
@@ -3802,10 +3803,22 @@ namespace BDArmory.UI
                         GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionKillerGMGracePeriod")}: ({BDArmorySettings.COMPETITION_KILLER_GM_GRACE_PERIOD}s)", leftLabel);
                         BDArmorySettings.COMPETITION_KILLER_GM_GRACE_PERIOD = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_KILLER_GM_GRACE_PERIOD / 10f, 0f, 18f)) * 10f;
 
-                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionKillerGMFrequency")}: ({(BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY > 60 ? "Off" : BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY + "s")}, {(BDACompetitionMode.Instance != null && BDACompetitionMode.Instance.killerGMenabled ? "on" : "off")})", leftLabel);
+                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionKillerGMFrequency")}: ({(BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY > 60 ? StringUtils.Localize("#LOC_BDArmory_Generic_Off") : BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY + "s")}, {(BDACompetitionMode.Instance != null && BDACompetitionMode.Instance.killerGMenabled ? StringUtils.Localize("#LOC_BDArmory_Generic_On") : StringUtils.Localize("#LOC_BDArmory_Generic_Off"))})", leftLabel);
                         BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY / 10f, 1, 6)) * 10f; // For now, don't control the killerGMEnabled flag (it's controlled by right clicking M).
                     }
-                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionWaypointTimeThreshold")}: ({(BDArmorySettings.COMPETITION_WAYPOINTS_GM_KILL_PERIOD > 0 ? $"{BDArmorySettings.COMPETITION_WAYPOINTS_GM_KILL_PERIOD:0}s" : "Off")})", leftLabel); // Waypoint threshold
+                    // Craft autokill criteria
+                    BDArmorySettings.COMPETITION_GM_KILL_WEAPON = GUI.Toggle(SLineRect(++line), BDArmorySettings.COMPETITION_GM_KILL_WEAPON, "#LOC_BDArmory_Settings_CompetitionGMWeaponKill"); // StringUtils.Localize("#LLOC_BDArmory_Settings_CompetitionAltitudeLimitASL"));                    
+                    BDArmorySettings.COMPETITION_GM_KILL_ENGINE = GUI.Toggle(SLineRect(++line), BDArmorySettings.COMPETITION_GM_KILL_ENGINE, "#LOC_BDArmory_Settings_CompetitionGMEngineKill"); // StringUtils.Localize("#LLOC_BDArmory_Settings_CompetitionAltitudeLimitASL"));                    
+                    string GMKillHP;
+                    if (BDArmorySettings.COMPETITION_GM_KILL_HP <= 0f) GMKillHP = StringUtils.Localize("#LOC_BDArmory_Generic_Off");
+                    else GMKillHP = $"<{Mathf.RoundToInt((BDArmorySettings.COMPETITION_GM_KILL_HP))}%";
+                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionGMHPKill")}: {GMKillHP}", leftLabel); 
+                    BDArmorySettings.COMPETITION_GM_KILL_HP = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_GM_KILL_HP, 0, 99));
+
+                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionGMKillDelay")}: {(BDArmorySettings.COMPETITION_GM_KILL_TIME > -1 ? (BDArmorySettings.COMPETITION_GM_KILL_TIME + "s") : StringUtils.Localize("#LOC_BDArmory_Generic_Off"))}", leftLabel);
+                    BDArmorySettings.COMPETITION_GM_KILL_TIME = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_GM_KILL_TIME, -1, 60));
+
+                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CompetitionWaypointTimeThreshold")}: ({(BDArmorySettings.COMPETITION_WAYPOINTS_GM_KILL_PERIOD > 0 ? $"{BDArmorySettings.COMPETITION_WAYPOINTS_GM_KILL_PERIOD:0}s" : StringUtils.Localize("#LOC_BDArmory_Generic_Off"))})", leftLabel); // Waypoint threshold
                     BDArmorySettings.COMPETITION_WAYPOINTS_GM_KILL_PERIOD = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.COMPETITION_WAYPOINTS_GM_KILL_PERIOD, 0, 120), 5);
 
                     line += 0.2f;

@@ -31,6 +31,10 @@ namespace BDArmory.Radar
         public string rotationTransformName = string.Empty;
         Transform rotationTransform;
 
+        [KSPField]
+        public string irstTransformName = string.Empty;
+        Transform irstTransform;
+
         #endregion General Configuration
 
         #region Capabilities
@@ -255,7 +259,7 @@ namespace BDArmory.Radar
                 {
                     rotationTransform = part.FindModelTransform(rotationTransformName);
                 }
-
+                irstTransform = irstTransformName != string.Empty ? part.FindModelTransform(irstTransformName) : part.transform;
                 referenceTransform = (new GameObject()).transform;
                 referenceTransform.parent = transform;
                 referenceTransform.localPosition = Vector3.zero;
@@ -344,13 +348,13 @@ namespace BDArmory.Radar
                     {
                         referenceTransform.position = part.transform.position;
                         referenceTransform.rotation =
-                            Quaternion.LookRotation(VectorUtils.GetNorthVector(transform.position, vessel.mainBody),
+                            Quaternion.LookRotation(VectorUtils.GetNorthVector(irstTransform.position, vessel.mainBody),
                                 VectorUtils.GetUpDirection(transform.position));
                     }
                     else
                     {
                         referenceTransform.position = part.transform.position;
-                        referenceTransform.rotation = Quaternion.LookRotation(part.transform.up,
+                        referenceTransform.rotation = Quaternion.LookRotation(irstTransform.up,
                             VectorUtils.GetUpDirection(referenceTransform.position));
                     }
                     //UpdateInputs();

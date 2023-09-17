@@ -3,6 +3,7 @@ using UnityEngine;
 
 using BDArmory.Control;
 using BDArmory.Weapons.Missiles;
+using BDArmory.Weapons;
 
 namespace BDArmory.Radar
 {
@@ -14,6 +15,7 @@ namespace BDArmory.Radar
         public bool foundRadarMissile;
         public bool foundAntiRadiationMissile;
         public bool foundAGM;
+        public bool foundTorpedo;
         public List<IncomingMissile> incomingMissiles; // List of incoming missiles sorted by distance.
         #endregion
 

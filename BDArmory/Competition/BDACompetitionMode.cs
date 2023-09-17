@@ -1017,6 +1017,7 @@ namespace BDArmory.Competition
             if (VesselModuleRegistry.ignoredVesselTypes.Contains(vessel.vesselType)) return;
             if (!BDArmorySettings.AUTONOMOUS_COMBAT_SEATS) CheckForAutonomousCombatSeat(vessel);
             if (BDArmorySettings.DESTROY_UNCONTROLLED_WMS) CheckForUncontrolledVessel(vessel);
+            if (BDArmorySettings.COMPETITION_GM_KILL_TIME > -1 && (BDArmorySettings.COMPETITION_GM_KILL_WEAPON || BDArmorySettings.COMPETITION_GM_KILL_ENGINE || (BDArmorySettings.COMPETITION_GM_KILL_HP > 0))) CheckForGMCulling(vessel);
         }
 
         HashSet<VesselType> validVesselTypes = new HashSet<VesselType> { VesselType.Plane, VesselType.Ship };
@@ -1091,6 +1092,27 @@ namespace BDArmory.Competition
                 StartCoroutine(DelayedExplodeWMs(vessel, 2f, UncontrolledReason.Bricked)); // Vessel fried by EMP, destroy its weapon manager in 2s.
             }
         }
+        void CheckForGMCulling(Vessel vessel)
+        {
+            if (vessel == null || vessel.vesselName == null) return;
+            if (BDArmorySettings.COMPETITION_GM_KILL_ENGINE)
+            {
+                if (VesselModuleRegistry.GetModuleCount<ModuleEngines>(vessel) == 0)
+                    StartCoroutine(DelayedGMKill(vessel, BDArmorySettings.COMPETITION_GM_KILL_TIME, " lost all engines. Terminated by GM."));
+            }
+            if (BDArmorySettings.COMPETITION_GM_KILL_WEAPON)
+            {
+                if (VesselModuleRegistry.GetModuleCount<IBDWeapon>(vessel) == 0)
+                    StartCoroutine(DelayedGMKill(vessel, BDArmorySettings.COMPETITION_GM_KILL_TIME, " lost all weapons. Terminated by GM."));
+            }
+            if (BDArmorySettings.COMPETITION_GM_KILL_HP > 0)
+            {
+                var mf = VesselModuleRegistry.GetModule<MissileFire>(vessel);
+                if (mf != null)
+                    if (mf.currentHP < BDArmorySettings.COMPETITION_GM_KILL_HP)
+                        StartCoroutine(DelayedGMKill(vessel, BDArmorySettings.COMPETITION_GM_KILL_TIME, " crippled. Terminated by GM."));
+            }
+        }
 
         enum UncontrolledReason { Uncontrolled, Bricked };
         HashSet<Vessel> explodingWM = new HashSet<Vessel>();
@@ -1124,6 +1146,35 @@ namespace BDArmory.Competition
                 foreach (var weaponManager in VesselModuleRegistry.GetMissileFires(vessel))
                 { PartExploderSystem.AddPartToExplode(weaponManager.part); }
             }
+            explodingWM.Remove(vessel);
+        }
+
+        IEnumerator DelayedGMKill(Vessel vessel, float delay, string killReason)
+        {
+            if (explodingWM.Contains(vessel)) yield break; // Already scheduled for exploding.
+            explodingWM.Add(vessel);
+            yield return new WaitForSecondsFixed(delay);
+            if (vessel == null) // It's already dead.
+            {
+                explodingWM = explodingWM.Where(v => v != null).ToHashSet(); // Clean the hashset.
+                yield break;
+            }
+
+            var vesselName = vessel.GetName();
+            var killerName = "";
+            if (Scores.Players.Contains(vesselName))
+            {
+                killerName = Scores.ScoreData[vesselName].lastPersonWhoDamagedMe;
+                if (killerName == "")
+                {
+                    Scores.ScoreData[vesselName].lastPersonWhoDamagedMe = "Killed by GM"; // only do this if it's not already damaged
+                    killerName = "Killed By GM";
+                }
+                Scores.RegisterDeath(vesselName, GMKillReason.GM);
+                competitionStatus.Add(vesselName + killReason);
+            }
+            if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
+            VesselUtils.ForceDeadVessel(vessel);
             explodingWM.Remove(vessel);
         }
 
@@ -2591,6 +2642,18 @@ namespace BDArmory.Competition
                                 if (now - vData.landedKillTimer > BDArmorySettings.COMPETITION_KILL_TIMER)
                                 {
                                     vesselsToKill.Add(mf.vessel);
+                                }
+                            }
+                            else
+                            {
+                                var surfaceAI = VesselModuleRegistry.GetModule<BDModuleSurfaceAI>(vessel);
+                                if ((surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Land && vessel.Splashed) || ((surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Water || surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Submarine) && vessel.Landed))
+                                {
+                                    KillTimer[vesselName] = (int)(now - vData.landedKillTimer);
+                                    if (now - vData.landedKillTimer > BDArmorySettings.COMPETITION_KILL_TIMER)
+                                    {
+                                        vesselsToKill.Add(mf.vessel);
+                                    }
                                 }
                             }
                         }

@@ -403,7 +403,7 @@ namespace BDArmory.Bullets
                 if (isAPSprojectile)
                 {
                     if (HEType != PooledBulletTypes.Explosive && tntMass > 0)
-                        ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, default, -1, true);
+                        ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, default, -1, true);
                 }
                 return;
             }
@@ -434,7 +434,7 @@ namespace BDArmory.Bullets
                     if (caliber < 75f)
                     {
                         if (HEType != PooledBulletTypes.Slug)
-                            ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, default, -1, false, bulletMass, -1, dmgMult);
+                            ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, default, -1, false, bulletMass, -1, dmgMult);
                         if (nuclear)
                             NukeFX.CreateExplosion(currPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
                         hasDetonated = true;
@@ -454,7 +454,7 @@ namespace BDArmory.Bullets
                             else //if (fuzeType != BulletFuzeTypes.None)
                             {
                                 if (HEType != PooledBulletTypes.Slug)
-                                    ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, default, -1, false, bulletMass, -1, dmgMult);
+                                    ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, default, -1, false, bulletMass, -1, dmgMult);
                                 if (nuclear)
                                     NukeFX.CreateExplosion(currPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
                                 hasDetonated = true;
@@ -474,7 +474,7 @@ namespace BDArmory.Bullets
             {
                 //detonate
                 if (HEType != PooledBulletTypes.Slug)
-                    ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, HEType == PooledBulletTypes.Explosive ? default : currentVelocity, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", null, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
+                    ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, HEType == PooledBulletTypes.Explosive ? default : currentVelocity, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", null, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
                 if (nuclear)
                     NukeFX.CreateExplosion(currPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
                 if (beehive)
@@ -1365,7 +1365,7 @@ namespace BDArmory.Bullets
             if (!hasDetonated)
             {
                 if (HEType != PooledBulletTypes.Slug)
-                    ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, HEType == PooledBulletTypes.Explosive ? default : currentVelocity, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", CurrentPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
+                    ExplosionFx.CreateExplosion(currPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, HEType == PooledBulletTypes.Explosive ? default : currentVelocity, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", CurrentPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
                 if (nuclear)
                     NukeFX.CreateExplosion(currPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
                 hasDetonated = true;
@@ -1429,7 +1429,7 @@ namespace BDArmory.Bullets
                 pBullet.transform.position = currPosition;
 
                 pBullet.caliber = subMunitionType.caliber;
-                pBullet.bulletVelocity = subMunitionType.bulletVelocity;
+                pBullet.bulletVelocity = GetDragAdjustedVelocity().magnitude + subMunitionType.bulletVelocity;
                 pBullet.bulletMass = subMunitionType.bulletMass;
                 pBullet.incendiary = subMunitionType.incendiary;
                 pBullet.apBulletMod = subMunitionType.apBulletMod;
@@ -1437,8 +1437,8 @@ namespace BDArmory.Bullets
                 pBullet.ballisticCoefficient = subMunitionType.bulletMass / (((Mathf.PI * 0.25f * subMunitionType.caliber * subMunitionType.caliber) / 1000000f) * 0.295f);
                 pBullet.timeElapsedSinceCurrentSpeedWasAdjusted = 0;
                 pBullet.timeToLiveUntil = 2000 / bulletVelocity * 1.1f + Time.time;
-                Vector3 firedVelocity = VectorUtils.GaussianDirectionDeviation(currentVelocity.normalized, subMunitionType.subProjectileDispersion > 0 ? subMunitionType.subProjectileDispersion : (subMunitionType.subProjectileCount / BDAMath.Sqrt((currentVelocity * dragVelocityFactor).magnitude / 100))) * subMunitionType.bulletVelocity; //more subprojectiles = wider spread, higher base velocity = tighter spread
-                pBullet.currentVelocity = GetDragAdjustedVelocity() + firedVelocity; // currentVelocity is already the real velocity w/o offloading
+                Vector3 firedVelocity = VectorUtils.GaussianDirectionDeviation(currentVelocity.normalized, subMunitionType.subProjectileDispersion > 0 ? subMunitionType.subProjectileDispersion : (subMunitionType.subProjectileCount / BDAMath.Sqrt(GetDragAdjustedVelocity().magnitude / 100))) * (GetDragAdjustedVelocity().magnitude + subMunitionType.bulletVelocity); //more subprojectiles = wider spread, higher base velocity = tighter spread
+                pBullet.currentVelocity = firedVelocity; //if submunitions have additional vel, would need modifications to ModuleWeapon's CPA calcs to offset targetPos by -targetVel * (submunitionVelocity / proximityDetonationdist)
                 pBullet.sourceWeapon = sourceWeapon;
                 pBullet.sourceVessel = sourceVessel;
                 pBullet.team = team;
@@ -1657,14 +1657,14 @@ namespace BDArmory.Bullets
                     if ((fuzeType == BulletFuzeTypes.Timed || fuzeType == BulletFuzeTypes.Flak) || HEType == PooledBulletTypes.Shaped)
                     {
                         if (HEType != PooledBulletTypes.Slug)
-                            ExplosionFx.CreateExplosion(hit.point, GetExplosivePower(), explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, HEType == PooledBulletTypes.Explosive ? default : ray.direction, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", hitPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
+                            ExplosionFx.CreateExplosion(hit.point, GetExplosivePower(), explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, HEType == PooledBulletTypes.Explosive ? default : ray.direction, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", hitPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
                         if (nuclear)
                             NukeFX.CreateExplosion(currPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
                     }
                     else
                     {
                         if (HEType != PooledBulletTypes.Slug)
-                            ExplosionFx.CreateExplosion(hit.point - (ray.direction * 0.1f), GetExplosivePower(), explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, HEType == PooledBulletTypes.Explosive ? default : ray.direction, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", hitPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
+                            ExplosionFx.CreateExplosion(hit.point - (ray.direction * 0.1f), GetExplosivePower(), explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, HEType == PooledBulletTypes.Explosive ? default : ray.direction, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? "shapedcharge" : "standard", hitPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
                         if (nuclear)
                             NukeFX.CreateExplosion(currPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
                     }
